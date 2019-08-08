@@ -470,4 +470,4 @@ class MachinesStoragePoolTestSuite(MachinesLib):
                                  cond=clickable))
         self.click(self.wait_css('#pool-default-system-name', cond=clickable))
         self.click(self.wait_css('#pool-default-system-storage-volumes', cond=clickable))
-        self.wait_css('#pool-default-system-volume-cirros\.qcow2-usedby', cond=text_in, text_=name)
+        self.wait_css('#pool-default-system-volume-ppc64lemini\.qcow2-usedby', cond=text_in, text_=name)

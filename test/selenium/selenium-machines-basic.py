@@ -40,8 +40,7 @@ class MachinesBasicTestSuite(MachinesLib):
         name = "staticvm"
         args = self.create_vm(name, wait=True)
 
-        self.click(self.wait_css('#vm-{}-reboot'.format(name), cond=clickable))
-        wait(lambda: "reboot: Power down" in self.machine.execute("sudo cat {0}".format(args.get('logfile'))), delay=3)
+        self.check_vm_reboot(name, args.get('logfile'))
         self.wait_css('#vm-{}-state'.format(name), cond=text_in, text_='running')
 
     def testForceRestartVm(self):
@@ -49,10 +48,11 @@ class MachinesBasicTestSuite(MachinesLib):
         args = self.create_vm(name, wait=True)
 
         def force_reboot_operation():
+            self.machine.execute('sudo sh -c "echo > {}"'.format(args.get('logfile')))
             self.click(self.wait_css('#vm-{}-reboot-caret'.format(name), cond=clickable))
             self.click(self.wait_css('#vm-{}-forceReboot'.format(name), cond=clickable))
-            wait(lambda: re.search("login:.*Initializing cgroup",
-                                   self.machine.execute("sudo cat {0}".format(args.get('logfile')))), tries=10)
+            wait(lambda: 'SLOF' in self.machine.execute("sudo cat {}".format(args.get('logfile'))),
+                 tries=10)
 
         # Retry when running in edge
         # because the first operations will not take effect in some edge browser
@@ -66,11 +66,10 @@ class MachinesBasicTestSuite(MachinesLib):
 
     def testShutdownVm(self):
         name = "staticvm"
-        args = self.create_vm(name, wait=True)
+        self.create_vm(name, wait=True)
 
         self.click(self.wait_css('#vm-{}-off'.format(name), cond=clickable))
         self.wait_css('#vm-{}-state'.format(name), cond=text_in, text_='shut off')
-        wait(lambda: "reboot: Power down" in self.machine.execute("sudo cat {0}".format(args.get('logfile'))), delay=3)
         self.wait_css('#vm-{}-run'.format(name))
         self.click(self.wait_css('#vm-{}-consoles'.format(name), cond=clickable))
         self.wait_text("Please start the virtual machine to access its console.", element="div")
@@ -86,15 +85,6 @@ class MachinesBasicTestSuite(MachinesLib):
         self.click(self.wait_css('#vm-{}-consoles'.format(name), cond=clickable))
         self.wait_text("Please start the virtual machine to access its console.", element="div")
 
-    def testSendNMI(self):
-        name = "staticvm"
-        args = self.create_vm(name, wait=True)
-
-        self.click(self.wait_css('#vm-{}-off-caret'.format(name), cond=clickable))
-        self.click(self.wait_css('#vm-{}-sendNMI'.format(name), cond=clickable))
-        wait(lambda: "NMI received" in self.machine.execute("sudo cat {0}".format(args.get('logfile'))), delay=3)
-        self.wait_css('#vm-{}-state'.format(name), cond=text_in, text_='running')
-
     def testDelete(self):
         name = "staticvm"
         args = self.create_vm(name, wait=True)
@@ -102,9 +92,9 @@ class MachinesBasicTestSuite(MachinesLib):
         imgdel = "{}/imagetest.img".format(args.get('poolPath'))
         self.machine.execute(
             "sudo qemu-img create -f raw {} 128M && sudo virsh pool-refresh {}".format(imgdel, args.get('poolName')))
-        self.machine.execute("sudo virsh attach-disk {} {} vda".format(name, imgdel))
+        self.machine.execute("sudo virsh attach-disk {} {} vdb".format(name, imgdel))
         self.click(self.wait_css('#vm-{}-disks'.format(name), cond=clickable))
-        self.wait_css('#vm-{}-disks-vda-bus'.format(name))
+        self.wait_css('#vm-{}-disks-vdb-bus'.format(name))
 
         self.click(self.wait_css("#vm-{}-delete".format(name), cond=clickable))
         self.click(self.wait_css("#vm-{}-delete-modal-dialog li:nth-of-type(1) input".format(name), cond=clickable))
@@ -166,8 +156,8 @@ class MachinesBasicTestSuite(MachinesLib):
 
     def testCreateVMWithExisting(self):
         name = 'test_existing_' + MachinesLib.random_string()
-        base_path = '/var/lib/libvirt/images/cirros.qcow2'
-        dest_path = '/home/cirros.qcow2'
+        base_path = '/var/lib/libvirt/images/ppc64lemini.qcow2'
+        dest_path = '/home/ppc64lemini.qcow2'
         cmd = 'sudo test -f {base} && sudo cp {base} {dest} && sudo chmod 777 {dest}'
         self.machine.execute(cmd.format(base=base_path, dest=dest_path))
         self.vm_stop_list.append(name)
@@ -266,33 +256,25 @@ class MachinesBasicTestSuite(MachinesLib):
         # check autostart of the VM
         self.check_box(self.wait_css('#vm-{}-autostart-checkbox'.format(name),
                                      cond=clickable))
-        cmd_res = self.machine.execute('sudo virsh dominfo {} | grep Autostart'.format(name)).strip().split(" ")[-1]
-        self.assertEqual(cmd_res, 'enable')
+        wait(lambda: self.machine.execute('sudo virsh dominfo {} | grep Autostart'.format(name)).strip().split(" ")[-1] == 'enable')
         # uncheck autostart of the VM
         self.check_box(self.wait_css('#vm-{}-autostart-checkbox'.format(name),
                                      cond=clickable),
                        checked=False)
-        cmd_res = self.machine.execute('sudo virsh dominfo {} | grep Autostart'.format(name)).strip().split(" ")[-1]
-        self.assertEqual(cmd_res, 'disable')
+        wait(lambda: self.machine.execute('sudo virsh dominfo {} | grep Autostart'.format(name)).strip().split(" ")[-1] == 'disable')
 
     def testSetAutostartForOffVM(self):
         name = 'test_' + MachinesLib.random_string()
         self.create_vm(name, state='shut off')
         # check autostart of the VM
-        wait(lambda: not self.wait_css('#vm-{}-autostart-checkbox'.format(name)).is_selected())
         self.check_box(self.wait_css('#vm-{}-autostart-checkbox'.format(name),
                                      cond=clickable))
-        wait(lambda: self.wait_css('#vm-{}-autostart-checkbox'.format(name)).is_selected())
-        cmd_res = self.machine.execute('sudo virsh dominfo {} | grep Autostart'.format(name)).strip().split(" ")[-1]
-        self.assertEqual(cmd_res, 'enable')
+        wait(lambda: self.machine.execute('sudo virsh dominfo {} | grep Autostart'.format(name)).strip().split(" ")[-1] == 'enable')
         # uncheck autostart of the VM
-        wait(lambda: self.wait_css('#vm-{}-autostart-checkbox'.format(name)).is_selected())
         self.check_box(self.wait_css('#vm-{}-autostart-checkbox'.format(name),
                                      cond=clickable),
                        checked=False)
-        wait(lambda: not self.wait_css('#vm-{}-autostart-checkbox'.format(name)).is_selected())
-        cmd_res = self.machine.execute('sudo virsh dominfo {} | grep Autostart'.format(name)).strip().split(" ")[-1]
-        self.assertEqual(cmd_res, 'disable')
+        wait(lambda: self.machine.execute('sudo virsh dominfo {} | grep Autostart'.format(name)).strip().split(" ")[-1] == 'disable')
 
     def testCheckBootOrderInfo(self):
         name = 'test_' + MachinesLib.random_string()
@@ -304,7 +286,7 @@ class MachinesBasicTestSuite(MachinesLib):
         self.wait_css('#vm-{}-order-modal-device-row-1'.format(name))
 
         self.assertEqual(self.wait_css('#vm-{}-order-modal-device-row-0 div.ct-form span'.format(name)).text,
-                         '/var/lib/libvirt/images/cirros.qcow2')
+                         '/var/lib/libvirt/images/ppc64lemini.qcow2')
 
         cmd_result = self.machine.execute(
             'sudo virsh dumpxml {} | grep \'mac address\''.format(name))
@@ -385,7 +367,7 @@ class MachinesBasicTestSuite(MachinesLib):
         self.wait_css('#vm-{}-state'.format(name),
                       cond=text_in,
                       text_='running')
-        self.click(self.wait_css('#vm-{}-overview'.format(name), cond=clickable))
+        self.click(self.wait_css('#vm-{}-row'.format(name), cond=clickable))
 
         self.click(self.wait_css('#vm-{}-boot-order'.format(name),
                                  cond=clickable))
@@ -446,7 +428,7 @@ class MachinesBasicTestSuite(MachinesLib):
                              mem=128,
                              mem_unit='M',
                              immediately_start=True)
-        self.click(self.wait_css('#vm-{}-overview'.format(name), cond=clickable))
+        self.click(self.wait_css('#vm-{}-row'.format(name), cond=clickable))
         self.click(self.wait_css('#vm-{}-boot-order'.format(name), cond=clickable))
         self.click(self.wait_css('#vm-{}-order-modal-device-row-1-checkbox'.format(name),
                                  cond=clickable))
@@ -484,8 +466,9 @@ class MachinesBasicTestSuite(MachinesLib):
                       text_='network')
         self.click(self.wait_css('#vm-{}-order-modal-save'.format(name), cond=clickable))
         self.wait_css('#vm-{}-order-modal-window'.format(name), cond=invisible)
-        self.assertEqual(self.wait_css('#vm-{}-boot-order'.format(name)).text,
-                         'network,disk')
+        self.wait_css('#vm-{}-boot-order'.format(name),
+                      cond=text_in,
+                      text_ = 'network,disk')
         self.wait_css('#boot-order-tooltip', cond=invisible)
         # Change disk to the first boot option when VM off
         self.click(self.wait_css('#vm-{}-boot-order'.format(name),
@@ -498,6 +481,7 @@ class MachinesBasicTestSuite(MachinesLib):
                       text_='disk')
         self.click(self.wait_css('#vm-{}-order-modal-save'.format(name), cond=clickable))
         self.wait_css('#vm-{}-order-modal-window'.format(name), cond=invisible)
-        self.assertEqual(self.wait_css('#vm-{}-boot-order'.format(name)).text,
-                         'disk,network')
+        self.wait_css('#vm-{}-boot-order'.format(name),
+                      cond=text_in,
+                      text_='disk,network')
         self.wait_css('#boot-order-tooltip', cond=invisible)

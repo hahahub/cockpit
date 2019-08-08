@@ -96,16 +96,11 @@ class MachinesNetworksTestSuite(MachinesLib):
         self.click(self.wait_css('#network-{}-system-name'.format(net_name),
                                  cond=clickable))
 
-        wait(lambda: not self.wait_css('#network-{}-system-autostart-checkbox'.format(net_name)).is_selected())
         self.check_box(self.wait_css('#network-{}-system-autostart-checkbox'.format(net_name), cond=clickable))
-        wait(lambda: self.wait_css('#network-{}-system-autostart-checkbox'.format(net_name)).is_selected())
-        cmd_res = self.machine.execute('sudo virsh net-info {} | grep Autostart'.format(net_name))
-        self.assertEqual(cmd_res.strip().split(" ")[-1], 'yes')
-        wait(lambda: self.wait_css('#network-{}-system-autostart-checkbox'.format(net_name)).is_selected())
+        wait(lambda: self.machine.execute('sudo virsh net-info {} | grep Autostart'.format(net_name)).strip().split(" ")[-1] == 'yes')
+
         self.check_box(self.wait_css('#network-{}-system-autostart-checkbox'.format(net_name), cond=clickable), checked=False)
-        wait(lambda: not self.wait_css('#network-{}-system-autostart-checkbox'.format(net_name)).is_selected())
-        cmd_res = self.machine.execute('sudo virsh net-info {} | grep Autostart'.format(net_name))
-        self.assertEqual(cmd_res.strip().split(" ")[-1], 'no')
+        wait(lambda: self.machine.execute('sudo virsh net-info {} | grep Autostart'.format(net_name)).strip().split(" ")[-1] == 'no')
 
     def testTransientNetworkDeletion(self):
         net_1 = 'test_net_deletion_' + MachinesLib.random_string()
