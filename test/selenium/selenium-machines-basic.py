@@ -38,8 +38,7 @@ class MachinesBasicTestSuite(MachinesLib):
         name = "staticvm"
         args = self.create_vm(name, wait=True)
 
-        self.click(self.wait_css('#vm-{}-reboot'.format(name), cond=clickable))
-        wait(lambda: "reboot: Power down" in self.machine.execute("sudo cat {0}".format(args.get('logfile'))), delay=3)
+        self.check_vm_reboot(name, args.get('logfile'))
         self.wait_css('#vm-{}-state'.format(name), cond=text_in, text_='running')
 
     def testForceRestartVm(self):
@@ -47,10 +46,11 @@ class MachinesBasicTestSuite(MachinesLib):
         args = self.create_vm(name, wait=True)
 
         def force_reboot_operation():
+            self.machine.execute('sudo sh -c "echo > {}"'.format(args.get('logfile')))
             self.click(self.wait_css('#vm-{}-reboot-caret'.format(name), cond=clickable))
             self.click(self.wait_css('#vm-{}-forceReboot'.format(name), cond=clickable))
-            wait(lambda: re.search("login:.*Initializing cgroup",
-                                   self.machine.execute("sudo cat {0}".format(args.get('logfile')))), tries=10)
+            wait(lambda: 'SLOF' in self.machine.execute("sudo cat {}".format(args.get('logfile'))),
+                 tries=10)
 
         # Retry when running in edge
         # because the first operations will not take effect in some edge browser
@@ -64,11 +64,10 @@ class MachinesBasicTestSuite(MachinesLib):
 
     def testShutdownVm(self):
         name = "staticvm"
-        args = self.create_vm(name, wait=True)
+        self.create_vm(name, wait=True)
 
         self.click(self.wait_css('#vm-{}-off'.format(name), cond=clickable))
         self.wait_css('#vm-{}-state'.format(name), cond=text_in, text_='shut off')
-        wait(lambda: "reboot: Power down" in self.machine.execute("sudo cat {0}".format(args.get('logfile'))), delay=3)
         self.wait_css('#vm-{}-run'.format(name))
         self.click(self.wait_css('#vm-{}-consoles'.format(name), cond=clickable))
         self.wait_text("Please start the virtual machine to access its console.", element="div")
@@ -84,14 +83,14 @@ class MachinesBasicTestSuite(MachinesLib):
         self.click(self.wait_css('#vm-{}-consoles'.format(name), cond=clickable))
         self.wait_text("Please start the virtual machine to access its console.", element="div")
 
-    def testSendNMI(self):
-        name = "staticvm"
-        args = self.create_vm(name, wait=True)
-
-        self.click(self.wait_css('#vm-{}-off-caret'.format(name), cond=clickable))
-        self.click(self.wait_css('#vm-{}-sendNMI'.format(name), cond=clickable))
-        wait(lambda: "NMI received" in self.machine.execute("sudo cat {0}".format(args.get('logfile'))), delay=3)
-        self.wait_css('#vm-{}-state'.format(name), cond=text_in, text_='running')
+    # def testSendNMI(self):
+    #     name = "staticvm"
+    #     args = self.create_vm(name, wait=True)
+    #
+    #     self.click(self.wait_css('#vm-{}-off-caret'.format(name), cond=clickable))
+    #     self.click(self.wait_css('#vm-{}-sendNMI'.format(name), cond=clickable))
+    #     wait(lambda: "NMI received" in self.machine.execute("sudo cat {0}".format(args.get('logfile'))), delay=3)
+    #     self.wait_css('#vm-{}-state'.format(name), cond=text_in, text_='running')
 
     def testDelete(self):
         name = "staticvm"
@@ -100,9 +99,9 @@ class MachinesBasicTestSuite(MachinesLib):
         imgdel = "{}/imagetest.img".format(args.get('poolPath'))
         self.machine.execute(
             "sudo qemu-img create -f raw {} 128M && sudo virsh pool-refresh {}".format(imgdel, args.get('poolName')))
-        self.machine.execute("sudo virsh attach-disk {} {} vda".format(name, imgdel))
+        self.machine.execute("sudo virsh attach-disk {} {} vdb".format(name, imgdel))
         self.click(self.wait_css('#vm-{}-disks'.format(name), cond=clickable))
-        self.wait_css('#vm-{}-disks-vda-bus'.format(name))
+        self.wait_css('#vm-{}-disks-vdb-bus'.format(name))
 
         self.click(self.wait_css("#vm-{}-delete".format(name), cond=clickable))
         self.click(self.wait_css("#vm-{}-delete-modal-dialog li:nth-of-type(1) input".format(name), cond=clickable))
@@ -153,5 +152,5 @@ class MachinesBasicTestSuite(MachinesLib):
 
         self.wait_css('#vm-{}-row'.format(name))
         self.wait_css('#vm-{}-state'.format(name), cond=text_in, text_='creating VM installation')
-        self.wait_css('#vm-{}-state'.format(name), cond=text_in, text_='running')
+        self.wait_css('#vm-{}-state'.format(name), cond=text_in, text_='running', overridetry=80)
         self.wait_css('div.toolbar-pf-results canvas')

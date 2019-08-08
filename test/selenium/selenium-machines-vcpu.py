@@ -70,8 +70,12 @@ class MachinesOverviewTestSuite(MachinesLib):
             .format(name, sockets, cores, threads)
         self.machine.execute(cmd)
 
-    def testVcpuConfig0(self):
-        self.vcpuConfigureAndCheck('shut off', '8', '4', '2', '2', '2')
+    # def testVcpuConfig0(self):
+    #     self.vcpuConfigureAndCheck('shut off', '8', '4', '2', '2', '2')
 
-    def testVcpuConfig1(self):
-        self.vcpuConfigureAndCheck('running', '16', '8', '2', '4', '2')
+    # def testVcpuConfig1(self):
+    #     self.vcpuConfigureAndCheck('running', '16', '8', '2', '4', '2')
+
+    # PPC64 can not set core/thread over than 1
+    def testVcpuConfigPPC64(self):
+        self.vcpuConfigureAndCheck('shut off', '8', '4', '8', '1', '1')
