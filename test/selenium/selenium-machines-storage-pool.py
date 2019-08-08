@@ -127,8 +127,7 @@ class MachinesStoragePoolTestSuite(MachinesLib):
     def testAddAllPhysicalDiskDevice(self):
         name = 'pdd_' + MachinesLib.random_string()
         pdd = Disc(self.machine)
-        device_suffix = 'test' + MachinesLib.random_string()
-        device = pdd.adddisc(device_suffix, '100M')
+        device = pdd.adddisc('test' + MachinesLib.random_string(), '100M')
 
         # Switch from 'Virtual Machines page' to the 'Storage Pool page',
         # and click the button of storage pool creation to get the type of
@@ -136,8 +135,8 @@ class MachinesStoragePoolTestSuite(MachinesLib):
         parts = self.get_pdd_format_list()
         for part in parts:
             self.machine.execute(
-                'sudo dd if=/dev/zero of={} bs=4K count=1024'.format(device))
-            pdd.createparttable(device_suffix,
+                'sudo dd if=/dev/zero of={} bs=4K count=25600'.format(device))
+            pdd.createparttable(device,
                                 parttable='msdos' if part == 'dos' else part)
             pool_name = self.create_storage_by_ui(name=name,
                                                   storage_type='disk',
@@ -340,7 +339,7 @@ class MachinesStoragePoolTestSuite(MachinesLib):
 
         cmd_res = self.machine.execute(
             'sudo virsh pool-list --all | awk \'NR>=3{if($0!="")print $1}\'')
-        self.assertTrue(pool_name not in cmd_res)
+        wait(lambda: pool_name not in cmd_res)
 
         # Delete inactive ISCSI Storage Pool
         el_prefix_id = self.create_storage_by_ui(name=pool_name,
@@ -366,16 +365,15 @@ class MachinesStoragePoolTestSuite(MachinesLib):
 
         cmd_res = self.machine.execute(
             'sudo virsh pool-list --all | awk \'NR>=3{if($0!="")print $1}\'')
-        self.assertTrue(pool_name not in cmd_res)
+        wait(lambda: pool_name not in cmd_res)
 
         disc.clear(del_disk=False)
 
     def testDeletePddPool(self):
         disc = Disc(self.machine)
-        device_suffix = 'test' + MachinesLib.random_string()
-        device = disc.adddisc(device_suffix, '100M')
+        device = disc.adddisc('test' + MachinesLib.random_string(), '100M')
         self.machine.execute('sudo dd if=/dev/zero of={} bs=4K count=25600'.format(device))
-        disc.createparttable(device_suffix)
+        disc.createparttable(device)
 
         vol_name = device.split('/')[-1] + '1'
         pdd_name = 'test_pdd_deletion_' + MachinesLib.random_string()
@@ -395,7 +393,7 @@ class MachinesStoragePoolTestSuite(MachinesLib):
         self.click(self.wait_css('body > div:nth-child(2) > div.fade.in.modal > div > div > div.modal-footer > button.btn.btn-danger',
                                  cond=clickable))
         self.wait_css('#{}-name'.format(el_prefix_id), cond=invisible)
-        wait(lambda: vol_name in self.machine.execute('lsblk'))
+        wait(lambda: vol_name in self.machine.execute('lsblk {}'.format(device)))
 
         el_prefix_id = self.create_storage_by_ui(name=pdd_name,
                                                  storage_type='disk',
@@ -411,7 +409,7 @@ class MachinesStoragePoolTestSuite(MachinesLib):
         self.click(self.wait_css('body > div:nth-child(2) > div.fade.in.modal > div > div > div.modal-footer > button.btn.btn-danger',
                                  cond=clickable))
         self.wait_css('#{}-name'.format(el_prefix_id), cond=invisible)
-        wait(lambda: vol_name in self.machine.execute('lsblk'))
+        wait(lambda: vol_name in self.machine.execute('lsblk {}'.format(device)))
 
         el_prefix_id = self.create_storage_by_ui(name=pdd_name,
                                                  storage_type='disk',
@@ -420,15 +418,12 @@ class MachinesStoragePoolTestSuite(MachinesLib):
                                                  parted='dos')
         self.click(self.wait_css('#{}-name'.format(el_prefix_id), cond=clickable))
         self.click(self.wait_css('#delete-{}'.format(el_prefix_id), cond=clickable))
-        # make sure the checkbox can be checked
-        wait(lambda: not self.wait_css('#storage-pool-delete-volumes').is_selected())
         self.check_box(self.wait_css('#storage-pool-delete-volumes', cond=clickable))
-        wait(lambda: self.wait_css('#storage-pool-delete-volumes').is_selected())
 
         self.click(self.wait_css('body > div:nth-child(2) > div.fade.in.modal > div > div > div.modal-footer > button.btn.btn-danger',
                                  cond=clickable))
         self.wait_css('#{}-name'.format(el_prefix_id), cond=invisible)
-        wait(lambda: vol_name not in self.machine.execute('lsblk'))
+        wait(lambda: vol_name not in self.machine.execute('lsblk {}'.format(device)))
 
         disc.clear()
 
@@ -470,4 +465,4 @@ class MachinesStoragePoolTestSuite(MachinesLib):
                                  cond=clickable))
         self.click(self.wait_css('#pool-default-system-name', cond=clickable))
         self.click(self.wait_css('#pool-default-system-storage-volumes', cond=clickable))
-        self.wait_css('#pool-default-system-volume-cirros\.qcow2-usedby', cond=text_in, text_=name)
+        self.wait_css('#pool-default-system-volume-s390xmini\.qcow2-usedby', cond=text_in, text_=name)

@@ -75,3 +75,4 @@ class MachinesOverviewTestSuite(MachinesLib):
 
     def testVcpuConfig1(self):
         self.vcpuConfigureAndCheck('running', '16', '8', '2', '4', '2')
+

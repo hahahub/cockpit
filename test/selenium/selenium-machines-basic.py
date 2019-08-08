@@ -40,8 +40,7 @@ class MachinesBasicTestSuite(MachinesLib):
         name = "staticvm"
         args = self.create_vm(name, wait=True)
 
-        self.click(self.wait_css('#vm-{}-reboot'.format(name), cond=clickable))
-        wait(lambda: "reboot: Power down" in self.machine.execute("sudo cat {0}".format(args.get('logfile'))), delay=3)
+        self.check_vm_reboot(name, args.get('logfile'))
         self.wait_css('#vm-{}-state'.format(name), cond=text_in, text_='running')
 
     def testForceRestartVm(self):
@@ -51,8 +50,8 @@ class MachinesBasicTestSuite(MachinesLib):
         def force_reboot_operation():
             self.click(self.wait_css('#vm-{}-reboot-caret'.format(name), cond=clickable))
             self.click(self.wait_css('#vm-{}-forceReboot'.format(name), cond=clickable))
-            wait(lambda: re.search("login:.*Initializing cgroup",
-                                   self.machine.execute("sudo cat {0}".format(args.get('logfile')))), tries=10)
+            wait(lambda: re.match(r'[\s\S]+LOADPARM', self.machine.execute("sudo cat {}".format(args.get('logfile')))),
+                 tries=10)
 
         # Retry when running in edge
         # because the first operations will not take effect in some edge browser
@@ -66,11 +65,10 @@ class MachinesBasicTestSuite(MachinesLib):
 
     def testShutdownVm(self):
         name = "staticvm"
-        args = self.create_vm(name, wait=True)
+        self.create_vm(name, wait=True)
 
         self.click(self.wait_css('#vm-{}-off'.format(name), cond=clickable))
         self.wait_css('#vm-{}-state'.format(name), cond=text_in, text_='shut off')
-        wait(lambda: "reboot: Power down" in self.machine.execute("sudo cat {0}".format(args.get('logfile'))), delay=3)
         self.wait_css('#vm-{}-run'.format(name))
         self.click(self.wait_css('#vm-{}-consoles'.format(name), cond=clickable))
         self.wait_text("Please start the virtual machine to access its console.", element="div")
@@ -86,15 +84,6 @@ class MachinesBasicTestSuite(MachinesLib):
         self.click(self.wait_css('#vm-{}-consoles'.format(name), cond=clickable))
         self.wait_text("Please start the virtual machine to access its console.", element="div")
 
-    def testSendNMI(self):
-        name = "staticvm"
-        args = self.create_vm(name, wait=True)
-
-        self.click(self.wait_css('#vm-{}-off-caret'.format(name), cond=clickable))
-        self.click(self.wait_css('#vm-{}-sendNMI'.format(name), cond=clickable))
-        wait(lambda: "NMI received" in self.machine.execute("sudo cat {0}".format(args.get('logfile'))), delay=3)
-        self.wait_css('#vm-{}-state'.format(name), cond=text_in, text_='running')
-
     def testDelete(self):
         name = "staticvm"
         args = self.create_vm(name, wait=True)
@@ -102,9 +91,9 @@ class MachinesBasicTestSuite(MachinesLib):
         imgdel = "{}/imagetest.img".format(args.get('poolPath'))
         self.machine.execute(
             "sudo qemu-img create -f raw {} 128M && sudo virsh pool-refresh {}".format(imgdel, args.get('poolName')))
-        self.machine.execute("sudo virsh attach-disk {} {} vda".format(name, imgdel))
+        self.machine.execute("sudo virsh attach-disk {} {} vdb".format(name, imgdel))
         self.click(self.wait_css('#vm-{}-disks'.format(name), cond=clickable))
-        self.wait_css('#vm-{}-disks-vda-bus'.format(name))
+        self.wait_css('#vm-{}-disks-vdb-bus'.format(name))
 
         self.click(self.wait_css("#vm-{}-delete".format(name), cond=clickable))
         self.click(self.wait_css("#vm-{}-delete-modal-dialog li:nth-of-type(1) input".format(name), cond=clickable))
@@ -151,7 +140,7 @@ class MachinesBasicTestSuite(MachinesLib):
                              name=name,
                              source_type='url',
                              source=os.environ.get('URLSOURCE'),
-                             operating_system=None,
+                             operating_system='Fedora (unknown)',
                              immediately_start=True)
 
         self.wait_css('#vm-{}-row'.format(name))
@@ -166,47 +155,16 @@ class MachinesBasicTestSuite(MachinesLib):
 
     def testCreateVMWithExisting(self):
         name = 'test_existing_' + MachinesLib.random_string()
-        base_path = '/var/lib/libvirt/images/cirros.qcow2'
-        dest_path = '/home/cirros.qcow2'
-        cmd = 'sudo test -f {base} && sudo cp {base} {dest} && sudo chmod 777 {dest}'
-        self.machine.execute(cmd.format(base=base_path, dest=dest_path))
+        dest_path = '/tmp/s390xmini.qcow2'
+        cmd = ('sudo cp /var/lib/libvirt/images/s390xmini.qcow2 {dest} && '
+               'sudo chown test:test {dest}').format(dest=dest_path)
+        self.machine.execute(cmd)
         self.vm_stop_list.append(name)
 
         self.create_vm_by_ui(connection='session',
                              name=name,
                              source_type='disk_image',
                              source=dest_path)
-
-    def testCheckOSRecommendMemory(self):
-        self.click(self.wait_css('#create-new-vm', cond=clickable))
-        self.select_by_value(self.wait_css('#source-type', cond=clickable),
-                             'file')
-        self.send_keys(self.wait_css('label[for=os-select] + div > div > div > input', cond=clickable),
-                       'SUSE CaaS Platform 3.0')
-        self.send_keys(self.wait_css('label[for=os-select] + div > div > div > input', cond=clickable),
-                       Keys.ARROW_DOWN + Keys.ENTER,
-                       clear=False)
-        ActionChains(self.driver).move_to_element(self.wait_css('#memory-size-slider > div.slider-handle.min-slider-handle.round')).perform()
-        self.assertEqual(self.wait_css('#memory-size-slider .tooltip.tooltip-main.top .tooltip-inner').text.strip(),
-                         '8')
-
-        self.click(self.wait_css('button.btn-cancel.btn.btn-default',
-                                 cond=clickable))
-
-        self.click(self.wait_css('#create-new-vm', cond=clickable))
-        self.select_by_value(self.wait_css('#source-type', cond=clickable),
-                             'file')
-        self.send_keys(self.wait_css('label[for=os-select] + div > div > div > input', cond=clickable),
-                       'Pop!_OS 18.04')
-        self.send_keys(self.wait_css('label[for=os-select] + div > div > div > input', cond=clickable),
-                       Keys.ARROW_DOWN + Keys.ENTER,
-                       clear=False)
-        # can not use the same ActionChains object as there will be an error raised which is
-        # 'stale element reference: element is not attached to the page document'.Although the
-        # code has already finished
-        ActionChains(self.driver).move_to_element(self.wait_css('#memory-size-slider > div.slider-handle.min-slider-handle.round')).perform()
-        self.assertEqual(self.wait_css('#memory-size-slider .tooltip.tooltip-main.top .tooltip-inner').text.strip(),
-                         '4')
 
     def testCreateVMWithDifferentDisk(self):
         def createvm(storage_pool):
@@ -266,33 +224,25 @@ class MachinesBasicTestSuite(MachinesLib):
         # check autostart of the VM
         self.check_box(self.wait_css('#vm-{}-autostart-checkbox'.format(name),
                                      cond=clickable))
-        cmd_res = self.machine.execute('sudo virsh dominfo {} | grep Autostart'.format(name)).strip().split(" ")[-1]
-        self.assertEqual(cmd_res, 'enable')
+        wait(lambda: self.machine.execute('sudo virsh dominfo {} | grep Autostart'.format(name)).strip().split(" ")[-1] == 'enable')
         # uncheck autostart of the VM
         self.check_box(self.wait_css('#vm-{}-autostart-checkbox'.format(name),
                                      cond=clickable),
                        checked=False)
-        cmd_res = self.machine.execute('sudo virsh dominfo {} | grep Autostart'.format(name)).strip().split(" ")[-1]
-        self.assertEqual(cmd_res, 'disable')
+        wait(lambda: self.machine.execute('sudo virsh dominfo {} | grep Autostart'.format(name)).strip().split(" ")[-1] == 'disable')
 
     def testSetAutostartForOffVM(self):
         name = 'test_' + MachinesLib.random_string()
         self.create_vm(name, state='shut off')
         # check autostart of the VM
-        wait(lambda: not self.wait_css('#vm-{}-autostart-checkbox'.format(name)).is_selected())
         self.check_box(self.wait_css('#vm-{}-autostart-checkbox'.format(name),
                                      cond=clickable))
-        wait(lambda: self.wait_css('#vm-{}-autostart-checkbox'.format(name)).is_selected())
-        cmd_res = self.machine.execute('sudo virsh dominfo {} | grep Autostart'.format(name)).strip().split(" ")[-1]
-        self.assertEqual(cmd_res, 'enable')
+        wait(lambda: self.machine.execute('sudo virsh dominfo {} | grep Autostart'.format(name)).strip().split(" ")[-1] == 'enable')
         # uncheck autostart of the VM
-        wait(lambda: self.wait_css('#vm-{}-autostart-checkbox'.format(name)).is_selected())
         self.check_box(self.wait_css('#vm-{}-autostart-checkbox'.format(name),
                                      cond=clickable),
                        checked=False)
-        wait(lambda: not self.wait_css('#vm-{}-autostart-checkbox'.format(name)).is_selected())
-        cmd_res = self.machine.execute('sudo virsh dominfo {} | grep Autostart'.format(name)).strip().split(" ")[-1]
-        self.assertEqual(cmd_res, 'disable')
+        wait(lambda: self.machine.execute('sudo virsh dominfo {} | grep Autostart'.format(name)).strip().split(" ")[-1] == 'disable')
 
     def testCheckBootOrderInfo(self):
         name = 'test_' + MachinesLib.random_string()
@@ -304,7 +254,7 @@ class MachinesBasicTestSuite(MachinesLib):
         self.wait_css('#vm-{}-order-modal-device-row-1'.format(name))
 
         self.assertEqual(self.wait_css('#vm-{}-order-modal-device-row-0 div.ct-form span'.format(name)).text,
-                         '/var/lib/libvirt/images/cirros.qcow2')
+                         '/var/lib/libvirt/images/s390xmini.qcow2')
 
         cmd_result = self.machine.execute(
             'sudo virsh dumpxml {} | grep \'mac address\''.format(name))
@@ -371,8 +321,10 @@ class MachinesBasicTestSuite(MachinesLib):
 
     def testInvertUniqueBootOption(self):
         name = 'test' + MachinesLib.random_string()
-        source_path = '/tmp/test{}.iso'.format(MachinesLib.random_string())
-        self.machine.execute('touch {}'.format(source_path))
+        source_path = '/tmp/' + MachinesLib.random_string()
+        cmd = ('sudo cp /var/lib/libvirt/images/s390xmini.qcow2 {path} ' +
+               '&& sudo chown test:test {path}').format(path=source_path)
+        self.machine.execute(cmd)
         self.vm_stop_list.append(name)
 
         self.create_vm_by_ui(connection='session',
@@ -385,7 +337,7 @@ class MachinesBasicTestSuite(MachinesLib):
         self.wait_css('#vm-{}-state'.format(name),
                       cond=text_in,
                       text_='running')
-        self.click(self.wait_css('#vm-{}-overview'.format(name), cond=clickable))
+        self.click(self.wait_css('#vm-{}-row'.format(name), cond=clickable))
 
         self.click(self.wait_css('#vm-{}-boot-order'.format(name),
                                  cond=clickable))
@@ -435,8 +387,10 @@ class MachinesBasicTestSuite(MachinesLib):
 
     def testEditVMBootOrder(self):
         name = 'test_' + MachinesLib.random_string()
-        source_path = '/tmp/test_' + MachinesLib.random_string()
-        self.machine.execute('touch {}'.format(source_path))
+        source_path = '/tmp/' + MachinesLib.random_string()
+        cmd = ('sudo cp /var/lib/libvirt/images/s390xmini.qcow2 {path} ' +
+               '&& sudo chown test:test {path}').format(path=source_path)
+        self.machine.execute(cmd)
         self.vm_stop_list.append(name)
         # Add network for the second boot option when VM running
         self.create_vm_by_ui(connection='session',
@@ -446,7 +400,7 @@ class MachinesBasicTestSuite(MachinesLib):
                              mem=128,
                              mem_unit='M',
                              immediately_start=True)
-        self.click(self.wait_css('#vm-{}-overview'.format(name), cond=clickable))
+        self.click(self.wait_css('#vm-{}-row'.format(name), cond=clickable))
         self.click(self.wait_css('#vm-{}-boot-order'.format(name), cond=clickable))
         self.click(self.wait_css('#vm-{}-order-modal-device-row-1-checkbox'.format(name),
                                  cond=clickable))
@@ -484,8 +438,9 @@ class MachinesBasicTestSuite(MachinesLib):
                       text_='network')
         self.click(self.wait_css('#vm-{}-order-modal-save'.format(name), cond=clickable))
         self.wait_css('#vm-{}-order-modal-window'.format(name), cond=invisible)
-        self.assertEqual(self.wait_css('#vm-{}-boot-order'.format(name)).text,
-                         'network,disk')
+        self.wait_css('#vm-{}-boot-order'.format(name),
+                      cond=text_in,
+                      text_ = 'network,disk')
         self.wait_css('#boot-order-tooltip', cond=invisible)
         # Change disk to the first boot option when VM off
         self.click(self.wait_css('#vm-{}-boot-order'.format(name),
@@ -498,6 +453,7 @@ class MachinesBasicTestSuite(MachinesLib):
                       text_='disk')
         self.click(self.wait_css('#vm-{}-order-modal-save'.format(name), cond=clickable))
         self.wait_css('#vm-{}-order-modal-window'.format(name), cond=invisible)
-        self.assertEqual(self.wait_css('#vm-{}-boot-order'.format(name)).text,
-                         'disk,network')
+        self.wait_css('#vm-{}-boot-order'.format(name),
+                      cond=text_in,
+                      text_='disk,network')
         self.wait_css('#boot-order-tooltip', cond=invisible)

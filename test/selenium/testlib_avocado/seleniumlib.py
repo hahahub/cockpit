@@ -439,7 +439,7 @@ parameters:
         self.click(self.wait_id('navbar-dropdown', cond=clickable))
         self.click(self.wait_id('go-logout', cond=clickable))
 
-    def check_machine_execute(self, timeout=5, machine=None):
+    def check_machine_execute(self, timeout=20, machine=None):
         if not machine:
             machine = self.machine
         try:

@@ -23,6 +23,7 @@
 # import libdisc; a=libdisc.Disc(machine, 'cockpit'); print a.adddisc('disc1'); print a.adddisc('disc2'); a.deldisc('disc2'); a.clear();"
 
 import re
+import time
 
 
 class Disc:
@@ -49,8 +50,10 @@ class Disc:
         # return the iscsi iqn for some method
         return '%s.%s:%s' % (self.prefix, self.domain, name)
 
-    def createparttable(self, name, parttable='msdos'):
-        self.machine.execute("sudo parted -s /var/tmp/%s_%s.target mktable %s" % (self.domain, name, parttable))
+    def createparttable(self, device, parttable='msdos'):
+        # In s390x, the format of 'mac' are not correct if parted is too fast
+        time.sleep(0.5)
+        self.machine.execute("sudo parted -s %s mktable %s" % (device, parttable))
 
     def adddisc(self, targetsuffix, size='10G'):
         self.addtarget(targetsuffix, size)
