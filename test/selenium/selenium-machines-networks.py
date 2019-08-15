@@ -62,7 +62,7 @@ class MachinesNetworksTestSuite(MachinesLib):
 
         self.click(self.wait_css('#vm-{}-network-1-edit-dialog'.format(name), cond=clickable))
         self.wait_css('#vm-{}-network-1-edit-dialog-modal-window'.format(name))
-        self.select(self.wait_css('#vm-{}-network-1-select-model'.format(name)), "select_by_index", 1)
+        self.select(self.wait_css('#vm-{}-network-1-select-model'.format(name)), "select_by_index", 3)
         self.wait_text('Changes will take effect after shutting down the VM')
         self.click(self.wait_css('#vm-{}-network-1-edit-dialog-save'.format(name), cond=clickable))
 
@@ -86,9 +86,10 @@ class MachinesNetworksTestSuite(MachinesLib):
 
         self.click(self.wait_css('#vm-{}-network-1-edit-dialog'.format(name), cond=clickable))
         self.wait_css('#vm-{}-network-1-edit-dialog-modal-window'.format(name))
-        self.select(self.wait_css('#vm-{}-network-1-select-model'.format(name)), 'select_by_value', 'e1000e')
+        self.select(self.wait_css('#vm-{}-network-1-select-model'.format(name)), "select_by_value", 'rtl8139')
         self.wait_text('Changes will take effect after shutting down the VM', cond=invisible)
         self.click(self.wait_css('#vm-{}-network-1-edit-dialog-save'.format(name), cond=clickable))
+        self.wait_css('#vm-{}-network-1-model'.format(name), cond=text_in, text_='rtl8139')
 
         self.wait_dialog_disappear()
         self.wait_css('#vm-{}-network-1-edit-dialog-modal-window'.format(name), cond=invisible)

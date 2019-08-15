@@ -10,7 +10,7 @@ from selenium.webdriver.common.keys import Keys
 
 SPICE_XML = """
     <video>
-      <model type='vga' heads='1' primary='yes'/>
+      <model type='virtio' heads='1' primary='yes'/>
       <alias name='video0'/>
     </video>
     <graphics type='spice' port='5900' autoport='yes' listen='127.0.0.1'>
@@ -21,7 +21,7 @@ SPICE_XML = """
 
 VNC_XML = """
     <video>
-      <model type='vga' heads='1' primary='yes'/>
+      <model type='virtio' heads='1' primary='yes'/>
       <alias name='video0'/>
     </video>
     <graphics type='vnc' port='5900' autoport='yes' listen='127.0.0.1'>
@@ -50,7 +50,7 @@ PTYCONSOLE_XML = """
 """
 
 DOMAIN_XML = """
-<domain type='qemu'>
+<domain type='kvm'>
   <name>{name}</name>
   <vcpu>1</vcpu>
   <os>
@@ -58,8 +58,8 @@ DOMAIN_XML = """
     <boot dev='hd'/>
     <boot dev='network'/>
   </os>
-  <memory unit='MiB'>64</memory>
-  <currentMemory unit='MiB'>64</currentMemory>
+  <memory unit='MiB'>512</memory>
+  <currentMemory unit='MiB'>512</currentMemory>
   <features>
     <acpi/>
   </features>
@@ -70,7 +70,7 @@ DOMAIN_XML = """
     <disk type='file' device='disk'>
       <driver name='qemu' type='qcow2'/>
       <source file='{image}'/>
-      <target dev='hda' bus='ide'/>
+      <target dev='vda' bus='virtio'/>
     </disk>
     <controller type='scsi' model='virtio-scsi' index='0' id='hot'/>
     <interface type='network'>
@@ -101,10 +101,10 @@ class MachinesLib(SeleniumTest):
     :avocado: disable
     """
 
-    def create_vm(self, name, graphics='spice', ptyconsole=False, state='running', wait=False):
+    def create_vm(self, name, graphics=None, ptyconsole=False, state='running', wait=False):
         self.virshvm = name
 
-        img = "{}/cirros.qcow2".format(SYS_POOL_PATH)
+        img = "{}/s390mini".format(SYS_POOL_PATH)
         pool_name = "default"
         pool_path = os.path.dirname(img)
         self.machine.execute("test -f {}".format(img))
@@ -155,7 +155,7 @@ class MachinesLib(SeleniumTest):
         log_file = vmargs.get('logfile')
         if log_file is not None:
             wait(
-                lambda: "login as 'cirros' user." in self.machine.execute("sudo cat {0}".format(log_file)),
+                lambda: "localhost login:" in self.machine.execute("sudo cat {0}".format(log_file)),
                 delay=3)
         else:
             sleep(10)
@@ -387,7 +387,7 @@ class MachinesLib(SeleniumTest):
             self.check_vm_pause_and_resume(vm_name)
             self.check_vm_reboot(vm_name, log_file)
             self.check_vm_force_reboot(vm_name, log_file)
-            self.check_send_NMI_to_vm(vm_name, log_file)
+            # self.check_send_NMI_to_vm(vm_name, log_file)
             self.check_vm_off(vm_name, log_file)
             self.check_vm_run(vm_name)
             self.check_vm_force_off(vm_name)
@@ -395,10 +395,10 @@ class MachinesLib(SeleniumTest):
     def check_vm_info(self, vm_name):
         self.wait_css('#vm-{}-row'.format(vm_name))
 
-        self.wait_css('#vm-{}-memory'.format(vm_name), cond=text_in, text_='64 MiB')
+        self.wait_css('#vm-{}-memory'.format(vm_name), cond=text_in, text_='512 MiB')
         self.wait_css('#vm-{}-vcpus-count'.format(vm_name), cond=text_in, text_='1')
-        self.wait_css('#vm-{}-cputype'.format(vm_name), cond=text_in, text_='custom')
-        self.wait_css('#vm-{}-emulatedmachine'.format(vm_name), cond=text_in, text_='pc')
+        self.wait_css('#vm-{}-cputype'.format(vm_name), cond=text_in, text_='custom (z13.2-base)')
+        self.wait_css('#vm-{}-emulatedmachine'.format(vm_name), cond=text_in, text_='s390-ccw-virtio-rhel7.6.0')
         self.wait_css('#vm-{}-bootorder'.format(vm_name), cond=text_in, text_='disk,network')
 
     def check_vm_pause_and_resume(self, vm_name):
@@ -415,22 +415,21 @@ class MachinesLib(SeleniumTest):
     def check_vm_reboot(self, vm_name, log_file):
         self.wait_css('#vm-{}-row'.format(vm_name))
 
-        wait(lambda: 'cirros login:' in self.machine.execute(
-            "sudo tail -n 1 {}".format(log_file)) or re.search(
-            'cirros login:.*NMI received',
-            self.machine.execute("sudo tail -n 3 {}".format(log_file))), delay=5)
+        wait(lambda: 'localhost login:' in self.machine.execute(
+            "sudo tail -n 1 {}".format(log_file)))
 
         self.click(self.wait_css('#vm-{}-reboot'.format(vm_name), cond=clickable))
-        wait(lambda: "reboot: Power down" in self.machine.execute("sudo cat {}".format(log_file)))
+        wait(lambda: "Requesting system reboot" in self.machine.execute("sudo cat {}".format(log_file)))
 
     def check_vm_force_reboot(self, vm_name, log_file):
         self.wait_css('#vm-{}-row'.format(vm_name))
 
-        self.machine.execute('sudo sh -c "echo > {}"'.format(log_file))
+        wait(lambda: 'localhost login:' in self.machine.execute(
+            "sudo tail -n 1 {}".format(log_file)))
 
         self.click(self.wait_css('#vm-{}-reboot-caret'.format(vm_name), cond=clickable))
         self.click(self.wait_css('#vm-{}-forceReboot'.format(vm_name), cond=clickable))
-        wait(lambda: 'Initializing cgroup subsys cpuset' in self.machine.execute('sudo cat {}'.format(log_file)))
+        wait(lambda: 'localhost login: LOADPARM' in self.machine.execute('sudo cat {}'.format(log_file)))
 
     def check_vm_force_off(self, vm_name):
         self.wait_css('#vm-{}-row'.format(vm_name))
@@ -455,10 +454,8 @@ class MachinesLib(SeleniumTest):
     def check_vm_off(self, vm_name, log_file):
         self.wait_css('#vm-{}-row'.format(vm_name))
 
-        wait(lambda: 'cirros login:' in self.machine.execute(
-            "sudo tail -n 1 {}".format(log_file)) or re.search(
-            'cirros login:.*NMI received',
-            self.machine.execute("sudo tail -n 3 {}".format(log_file))))
+        wait(lambda: 'localhost login:' in self.machine.execute(
+            "sudo tail -n 1 {}".format(log_file)))
 
         self.click(self.wait_css('#vm-{}-off'.format(vm_name), cond=clickable))
         self.wait_css('#vm-{}-off'.format(vm_name), cond=invisible)
