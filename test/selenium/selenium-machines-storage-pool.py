@@ -4,6 +4,7 @@ from avocado import skipIf
 from testlib_avocado.libdisc import Disc
 from testlib_avocado.machineslib import MachinesLib
 from testlib_avocado.seleniumlib import clickable, invisible, text_in
+from selenium.webdriver.common.keys import Keys
 
 
 class MachinesStoragePoolTestSuite(MachinesLib):
@@ -254,3 +255,59 @@ class MachinesStoragePoolTestSuite(MachinesLib):
             self.wait_xpath('/html/body/div[2]/div[2]/div/div/div[3]/button[2]',
                             cond=clickable))
         self.wait_css('#{}-name'.format(el_id_prefix), cond=invisible)
+        
+    @skipIf(os.environ.get('NFS') is None, 
+            'need an environment variable whose name is NFS')
+    def testDeleteNFSPool(self):
+        name = 'test_delete_nfs_pool_' + self.random_string()
+        self.storage_pool['pool'] = name
+
+        path = '/home/' + name
+        self.machine.execute('sudo mkdir -p {}'.format(path))
+
+        self.click(self.wait_text('Storage Pools', cond=clickable))
+        el_prefix_id = self.create_storage_by_ui(name=name,
+                                                 target_path=path,
+                                                 host=os.environ.get('NFS'),
+                                                 source_path='/home/nfs',
+                                                 storage_type='netfs')
+        self.wait_css('#{}-name'.format(el_prefix_id))
+
+        vol_name = 'vol_' + self.random_string()
+        vol_path = path + '/' + vol_name
+
+        self.machine.execute('sudo virsh vol-create-as {} {} 100M --format qcow2'.format(name, vol_name))
+        self.click(self.wait_css('#{}-name'.format(el_prefix_id)))
+        self.click(self.wait_css('#delete-{}'.format(el_prefix_id), cond=clickable))
+        self.click(self.wait_css(
+            'body > div:nth-child(2) > div.fade.in.modal > div > div > div.modal-footer > button.btn.btn-danger',
+            cond=clickable))
+        self.wait_css('#{}-name'.format(el_prefix_id), cond=invisible)
+
+        self.create_storage_by_ui(name=name,
+                                  target_path=path,
+                                  host=os.environ.get('NFS'),
+                                  source_path='/home/nfs',
+                                  storage_type='netfs')
+        self.wait_css('#{}-name'.format(el_prefix_id))
+        # verify the volume
+        self.machine.execute('test -f {}'.format(vol_path))
+
+        self.click(self.wait_css('#{}-name'.format(el_prefix_id)))
+        self.click(self.wait_css('#delete-{}'.format(el_prefix_id), cond=clickable))
+        # checkbox needs twice click
+        self.send_keys(self.wait_css('#storage-pool-delete-volumes'),
+                       Keys.SPACE,
+                       clear=False)
+        self.click(self.wait_css(
+            'body > div:nth-child(2) > div.fade.in.modal > div > div > div.modal-footer > button.btn.btn-danger',
+            cond=clickable))
+        self.wait_css('#{}-name'.format(el_prefix_id), cond=invisible)
+
+        self.create_storage_by_ui(name=name,
+                                  target_path=path,
+                                  host=os.environ.get('NFS'),
+                                  source_path='/home/nfs',
+                                  storage_type='netfs')
+        self.wait_css('#{}-name'.format(el_prefix_id))
+        self.machine.execute('! test -f {}'.format(vol_path))
