@@ -129,6 +129,8 @@ class MachinesBasicTestSuite(MachinesLib):
 
         self.machine.execute('sudo touch {}'.format(iso))
 
+        self.vm_stop_list.append(name)
+
         self.create_vm_by_ui(connection='session',
                              name=name,
                              source=iso,
@@ -136,12 +138,12 @@ class MachinesBasicTestSuite(MachinesLib):
                              mem_unit='M',
                              storage=50,
                              storage_unit='M')
-        self.vm_stop_list.append(name)
 
     @skipIf(os.environ.get('URLSOURCE') is None,
             "Need an environment variable named 'URLSOURCE'")
     def testCreateVMWithUrl(self):
         name = 'test_url'
+        self.vm_stop_list.append(name)
 
         self.create_vm_by_ui(
             connection='session', name=name, source_type='url', source=os.environ.get('URLSOURCE'), immediately_start=True)
@@ -150,5 +152,3 @@ class MachinesBasicTestSuite(MachinesLib):
         self.wait_css('#vm-{}-state'.format(name), cond=text_in, text_='creating VM installation')
         self.wait_css('#vm-{}-state'.format(name), cond=text_in, text_='running')
         self.wait_css('div.toolbar-pf-results canvas')
-
-        self.vm_stop_list.append(name)
