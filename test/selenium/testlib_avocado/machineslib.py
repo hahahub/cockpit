@@ -4,7 +4,6 @@ import secrets
 from time import sleep
 from .timeoutlib import wait
 from .seleniumlib import SeleniumTest, clickable, text_in, invisible
-from selenium.webdriver.common.keys import Keys
 
 
 SPICE_XML = """
@@ -210,29 +209,27 @@ class MachinesLib(SeleniumTest):
                         name='default',
                         source_type='file',
                         source='/var/lib/libvirt/images/cirros.qcow2',
-                        operating_system='CirrOS 0.4.0',
+                        os_vendor=None,
+                        operating_system=None,
                         mem=1,
                         mem_unit='G',
                         storage=10,
                         storage_unit='G',
                         immediately_start=False):
-        if source_type == 'disk_image':
-            self.click(self.wait_css('#import-vm-disk', cond=clickable))
-        else:
-            self.click(self.wait_css('#create-new-vm', cond=clickable))
+        self.click(self.wait_css('#create-new-vm', cond=clickable))
         self.wait_css('#create-vm-dialog')
 
         if connection == 'session':
-            self.click(self.wait_css("#connection label:last-of-type", cond=clickable))
+            self.select_by_value(self.wait_css("#connection", cond=clickable),
+                                 "session")
 
         self.send_keys(self.wait_css('#vm-name'), name)
 
-        if source_type != 'disk_image':
-            self.select_by_value(self.wait_css('#source-type'), source_type)
+        self.select_by_value(self.wait_css('#source-type'), source_type)
 
         filename = source.rsplit("/", 1)[-1]
-        if source_type in ['file', 'disk_image', 'pxe']:
-            self.send_keys(self.wait_css('label[for=source-file] + div input[type=text]'), source, ctrla=True)
+        if source_type in ['file', 'disk_image']:
+            self.send_keys(self.wait_css('#source-file > div > input'), source, ctrla=True)
             # click on filename link if appear dialog window
             element = self.wait_link(filename, fatal=False, overridetry=3, cond=clickable)
             if element:
@@ -247,10 +244,9 @@ class MachinesLib(SeleniumTest):
                     self.select_by_text(item, sl.text)
                     break
 
-        # click + clear + send_keys can make this field works well
-        # , or the string can not be send to the input
-        self.click(self.wait_css("label[for=os-select] + div > div > div > input"))
-        self.send_keys(self.wait_css("label[for=os-select] + div > div > div > input"), operating_system + Keys.ARROW_DOWN + Keys.ENTER)
+        if os_vendor and operating_system:
+            self.select_by_value(self.wait_css('#vendor-select'), os_vendor)
+            self.select_by_value(self.wait_css('#system-select'), operating_system)
 
         if mem_unit == 'M':
             self.select_by_text(self.wait_css('#memory-size-unit-select'), 'MiB')
@@ -303,13 +299,13 @@ class MachinesLib(SeleniumTest):
             self.select_by_value(self.wait_css('#storage-pool-dialog-type'), storage_type)
 
         if storage_type != 'iscsi-direct':
-            self.send_keys(self.wait_css('label[for=storage-pool-dialog-target] + div input[type=text]'), target_path, ctrla=True)
+            self.send_keys(self.wait_css('#storage-pool-dialog-target > div > input'), target_path, ctrla=True)
             element = self.wait_link(target_path.rsplit('/', 1)[-1], fatal=False, overridetry=3, cond=clickable)
             if element:
                 self.click(element)
 
         if storage_type == 'disk':
-            self.send_keys(self.wait_css('label[for=storage-pool-dialog-source] + div input[type=text]'), source_path)
+            self.send_keys(self.wait_css('#storage-pool-dialog-source > div > input'), source_path)
             self.click(self.wait_link(source_path.rsplit('/', 1)[-1], fatal=False, overridetry=3, cond=clickable))
             self.select_by_value(self.wait_css('#storage-pool-dialog-source-format', cond=clickable), parted)
 
