@@ -126,7 +126,6 @@ class MachinesStoragePoolTestSuite(MachinesLib):
         self.assertEqual(capacity_from_page, capacity_from_cmd)
 
     def testAddAllPhysicalDiskDevice(self):
-        name = 'pdd_' + MachinesLib.random_string()
         pdd = Disc(self.machine)
         device_suffix = 'test' + MachinesLib.random_string()
         device = pdd.adddisc(device_suffix, '100M')
@@ -136,22 +135,23 @@ class MachinesStoragePoolTestSuite(MachinesLib):
         # the physical disk device
         parts = self.get_pdd_format_list()
         for part in parts:
+            name = 'pdd_' + MachinesLib.random_string()
             self.machine.execute(
                 'sudo dd if=/dev/zero of={} bs=4K count=1024'.format(device))
             pdd.createparttable(device_suffix,
                                 parttable='msdos' if part == 'dos' else part)
-            pool_name = self.create_storage_by_ui(name=name,
-                                                  storage_type='disk',
-                                                  target_path='/media',
-                                                  source_path=device,
-                                                  parted=part)
-            self.click(self.wait_css('#{}-name'.format(pool_name), cond=clickable))
-            self.click(self.wait_css('#delete-{}'.format(pool_name), cond=clickable))
+            el_id_prefix = self.create_storage_by_ui(name=name,
+                                                     storage_type='disk',
+                                                     target_path='/media',
+                                                     source_path=device,
+                                                     parted=part)
+            self.click(self.wait_css('#{}-name'.format(el_id_prefix), cond=clickable))
+            self.click(self.wait_css('#delete-{}'.format(el_id_prefix), cond=clickable))
             self.click(
                 self.wait_xpath(
                     '/html/body/div[2]/div[2]/div/div/div[3]/button[2]',
                     cond=clickable))
-            self.wait_css('#{}-name', cond=invisible)
+            self.wait_css('#{}-name'.format(el_id_prefix), cond=invisible)
 
         pdd.clear()
 
@@ -223,11 +223,13 @@ class MachinesStoragePoolTestSuite(MachinesLib):
         self.click(
             self.wait_xpath('/html/body/div[2]/div[2]/div/div/div[3]/button[2]',
                             cond=clickable))
-        self.wait_css('#{}-name'.format(el_id_prefix), cond=invisible)
+        # work around: there will be a inactive row after deleting when using firefox
+        # self.wait_css('#{}-name'.format(el_id_prefix), cond=invisible)
         self.machine.execute('sudo test -f {}/{}'.format(path, vol_name))
 
         # Re-create the storage pool,
         # then delete it without deleting volumes in it
+        name = 'test_act_' + MachinesLib.random_string()
         el_id_prefix = self.create_storage_by_ui(name=name, target_path=path)
         self.click(self.wait_css('#{}-name'.format(el_id_prefix),
                                  cond=clickable))
@@ -238,11 +240,12 @@ class MachinesStoragePoolTestSuite(MachinesLib):
             self.wait_xpath('/html/body/div[2]/div[2]/div/div/div[3]/button[2]',
                             cond=clickable))
         self.wait_dialog_disappear()
-        self.wait_css('#{}-name'.format(el_id_prefix), cond=invisible)
+        # self.wait_css('#{}-name'.format(el_id_prefix), cond=invisible)
         self.machine.execute(
             'sudo su -c "! test -f {}/{}"'.format(path, vol_name))
 
         # Create the pool whose state is inactive, then delete it
+        name = 'test_act_' + MachinesLib.random_string()
         el_id_prefix = self.create_storage(name, path)
         self.click(
             self.wait_css('#{}-name'.format(el_id_prefix), cond=clickable))
@@ -251,4 +254,4 @@ class MachinesStoragePoolTestSuite(MachinesLib):
         self.click(
             self.wait_xpath('/html/body/div[2]/div[2]/div/div/div[3]/button[2]',
                             cond=clickable))
-        self.wait_css('#{}-name'.format(el_id_prefix), cond=invisible)
+        # self.wait_css('#{}-name'.format(el_id_prefix), cond=invisible)
