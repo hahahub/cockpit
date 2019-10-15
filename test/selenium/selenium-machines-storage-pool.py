@@ -425,3 +425,31 @@ class MachinesStoragePoolTestSuite(MachinesLib):
         self.assertNotIn(vol_name, self.machine.execute('lsblk'))
 
         disc.clear()
+
+    def testDeleteVolume(self):
+        pool_name = 'test' + MachinesLib.random_string()
+        pool_path = '/home/{}'.format(pool_name)
+        vol_name = 'test_vol_' + MachinesLib.random_string()
+        # Create storage pool and volume
+        self.machine.execute('sudo mkdir {}'.format(pool_path))
+        self.machine.execute('sudo virsh pool-create-as {} {} --target {}'.format(pool_name, 'dir', pool_path))
+        self.machine.execute('sudo virsh vol-create-as {} {} {}'.format(pool_name, vol_name, '10M'))
+        # Refresh to reload the pool information
+        self.click(self.wait_text('Storage Pools', cond=clickable))
+        self.refresh_machines_page()
+        # Check information about the pool and volume which is created above
+        self.click(self.wait_css('#pool-{}-system-name'.format(pool_name), cond=clickable))
+        self.click(self.wait_css('#pool-{}-system-storage-volumes'.format(pool_name), cond=clickable))
+        self.wait_css('#pool-{}-system-volume-{}-name'.format(pool_name, vol_name), cond=clickable)
+        # Delet the volume
+        self.wait_css('#storage-volumes-delete', cond=invisible)
+        self.check_box(self.wait_css('tr[data-row-id="pool-{}-system-volume-{}"] > td:nth-child(2) > input'.format(pool_name, vol_name),
+                                     cond=clickable))
+        self.wait_css('#storage-volumes-delete', 
+                      cond=text_in, 
+                      text_='Delete 1 volume')
+        self.click(self.wait_css('#storage-volumes-delete', cond=clickable))
+        # Check
+        self.wait_css('#pool-{}-system-volume-{}-name'.format(pool_name, vol_name), cond=invisible)
+        self.assertNotIn(vol_name, 
+                         self.machine.execute('ls {}'.format(pool_path)))

@@ -514,3 +514,7 @@ class MachinesLib(SeleniumTest):
         if length <= 0:
             raise Exception('The length should be greater than 0')
         return secrets.token_hex(length)
+
+    def refresh_machines_page(self):
+        self.driver.refresh()
+        self.wait_frame("machines")
