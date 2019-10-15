@@ -311,3 +311,59 @@ class MachinesStoragePoolTestSuite(MachinesLib):
                                   storage_type='netfs')
         self.wait_css('#{}-name'.format(el_prefix_id))
         self.machine.execute('! test -f {}'.format(vol_path))
+
+    def testDeleteISCSIPool(self):
+        pool_name = 'test_iscsi_deletation_' + MachinesLib.random_string()
+        disc = Disc(self.machine)
+        iscsi_iqn = disc.addtarget(
+            'test-' + MachinesLib.random_string(),
+            size='100M')
+
+        # Delete active ISCSI Storage Pool
+        self.click(self.wait_text('Storage Pools', cond=clickable))
+        el_prefix_id = self.create_storage_by_ui(name=pool_name,
+                                                 storage_type='iscsi',
+                                                 target_path='/dev/disk/by-path',
+                                                 host='127.0.0.1',
+                                                 source_path=iscsi_iqn)
+        self.click(
+            self.wait_css('#{}-name'.format(el_prefix_id), cond=clickable))
+
+        self.click(
+            self.wait_css('#delete-{}'.format(el_prefix_id), cond=clickable))
+        self.click(
+            self.wait_css('body > div:nth-child(2) > div.fade.in.modal > div > div > div.modal-footer > button.btn.btn-danger',
+                          cond=clickable))
+        self.wait_css('#{}-name'.format(el_prefix_id), cond=invisible)
+
+        cmd_res = self.machine.execute(
+            'sudo virsh pool-list --all | awk \'NR>=3{if($0!="")print $1}\'')
+        self.assertTrue(pool_name not in cmd_res)
+
+        # Delete inactive ISCSI Storage Pool
+        el_prefix_id = self.create_storage_by_ui(name=pool_name,
+                                                 storage_type='iscsi',
+                                                 target_path='/dev/disk/by-path',
+                                                 host='127.0.0.1',
+                                                 source_path=iscsi_iqn)
+        self.click(
+            self.wait_css('#{}-name'.format(el_prefix_id), cond=clickable))
+
+        self.click(self.wait_css('#deactivate-{}'.format(el_prefix_id),
+                                 cond=clickable))
+        self.wait_css('#{}-state'.format(el_prefix_id),
+                      cond=text_in,
+                      text_='inactive')
+
+        self.click(
+            self.wait_css('#delete-{}'.format(el_prefix_id), cond=clickable))
+        self.click(
+            self.wait_css('body > div:nth-child(2) > div.fade.in.modal > div > div > div.modal-footer > button.btn.btn-danger',
+                          cond=clickable))
+        self.wait_css('#{}-name'.format(el_prefix_id), cond=invisible)
+
+        cmd_res = self.machine.execute(
+            'sudo virsh pool-list --all | awk \'NR>=3{if($0!="")print $1}\'')
+        self.assertTrue(pool_name not in cmd_res)
+
+        disc.clear(del_disk=False)
