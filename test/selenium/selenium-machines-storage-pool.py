@@ -452,3 +452,13 @@ class MachinesStoragePoolTestSuite(MachinesLib):
         self.wait_css('#pool-{}-system-volume-{}-name'.format(pool_name, vol_name), cond=invisible)
         self.assertNotIn(vol_name,
                          self.machine.execute('ls {}'.format(pool_path)))
+
+    def testCheckVolumeUser(self):
+        name = 'staticvm'
+
+        self.create_vm(name)
+        
+        self.click(self.wait_text('Storage Pools', cond=clickable))
+        self.click(self.wait_css('#pool-default-system-name', cond=clickable))
+        self.click(self.wait_css('#pool-default-system-storage-volumes', cond=clickable))
+        self.wait_css('#pool-default-system-volume-cirros\.qcow2-usedby', cond=text_in, text_=name)
