@@ -126,6 +126,7 @@ class MachinesBasicTestSuite(MachinesLib):
     def testCreateVMWithISO(self):
         name = 'test_iso'
         iso = '/home/{}.iso'.format(name + str(time.time()).split('.')[0])
+        self.vm_stop_list.append(name)
 
         self.machine.execute('sudo touch {}'.format(iso))
 
