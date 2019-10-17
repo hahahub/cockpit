@@ -1,9 +1,10 @@
 import os
+import re
 from avocado import skipIf
 from testlib_avocado.libdisc import Disc
 from testlib_avocado.machineslib import MachinesLib
 from testlib_avocado.seleniumlib import clickable, invisible, text_in
-
+from selenium.webdriver.common.keys import Keys
 
 class MachinesStoragePoolTestSuite(MachinesLib):
     """
@@ -60,32 +61,25 @@ class MachinesStoragePoolTestSuite(MachinesLib):
         self.wait_css('#storage-pools-listing')
 
         pool_name = self.create_storage_by_ui(name=name, target_path=path)
-
-        info = self.wait_css(
-            'tr[data-row-id="' + pool_name + '"] > td:nth-child(4)').text.split(
-            '/')
-        allocation_from_page = '%.2f' % float(info[0].strip())
-        capacity_from_page = '%.2f' % float(info[1].split(' ')[1])
-
-        allocation_from_cmd = self.machine.execute('sudo virsh pool-info {} | grep Allocation'.format(name)).split(' ')
-        capacity_from_cmd = self.machine.execute('sudo virsh pool-info {} | grep Capacity'.format(name)).split(' ')
-
-        if allocation_from_cmd[-1].strip() == 'MiB':
-            allocation_from_cmd = '%.2f' % (float(allocation_from_cmd[-2]) / 1024)
-        elif allocation_from_cmd[-1].strip() == 'TiB':
-            allocation_from_page = '%.2f' % (float(allocation_from_page) / 1024)
-            allocation_from_cmd = '%.2f' % float(allocation_from_cmd[-2])
-        else:
-            allocation_from_cmd = '%.2f' % float(allocation_from_cmd[-2])
-
-        if capacity_from_cmd[-1].strip() == 'MiB':
-            capacity_from_cmd = '%.2f' % (float(capacity_from_cmd[-2]) / 1024)
-        elif capacity_from_cmd[-1].strip() == 'TiB':
-            capacity_from_page = '%.2f' % (float(capacity_from_page) / 1024)
-            capacity_from_cmd = '%.2f' % float(capacity_from_cmd[-2])
-        else:
-            capacity_from_cmd = '%.2f' % float(capacity_from_cmd[-2])
-
+        # Get information from page
+        page_res = self.wait_css(
+            'tr[data-row-id="' + pool_name + '"] > td:nth-child(4)').text.split('/')
+        allocation_from_page = float(page_res[0].strip())
+        capacity_from_page = float(page_res[1].split(' ')[1])
+        # Get information from command line
+        cmd_res = self.machine.execute(
+            'sudo virsh pool-info --bytes {}'.format(name))
+        allocation_from_cmd = round(float(re.compile(r'Allocation:.*')
+                                          .search(cmd_res)
+                                          .group(0)
+                                          .split(' ')[-1]) / 1024 / 1024 / 1024,
+                                    2)
+        capacity_from_cmd = round(float(re.compile(r'Capacity:.*')
+                                        .search(cmd_res)
+                                        .group(0)
+                                        .split(' ')[-1]) / 1024 / 1024 / 1024,
+                                  2)
+        # Compare
         self.assertEqual(allocation_from_page, allocation_from_cmd)
         self.assertEqual(capacity_from_page, capacity_from_cmd)
 
@@ -100,27 +94,29 @@ class MachinesStoragePoolTestSuite(MachinesLib):
         self.click(self.wait_text('Storage Pools', cond=clickable))
         self.wait_css('#storage-pools-listing')
 
-        pool_name = self.create_storage_by_ui(
-            name=name, storage_type='netfs', target_path=path,
-            host=os.environ.get('NFS'), source_path='/home/nfs', start_up=False)
+        pool_name = self.create_storage_by_ui(name=name,
+                                              storage_type='netfs',
+                                              target_path=path,
+                                              host=os.environ.get('NFS'),
+                                              source_path='/home/nfs',
+                                              start_up=False)
 
-        info = self.wait_css(
-            'tr[data-row-id="' + pool_name + '"] > td:nth-child(4)').text.split(
-            '/')
-        allocation_from_page = '%.2f' % float(info[0].strip())
-        capacity_from_page = '%.2f' % float(info[1].split(' ')[1])
+        page_res = self.wait_css('tr[data-row-id="' + pool_name + '"] > td:nth-child(4)').text.split('/')
+        allocation_from_page = float(page_res[0].strip())
+        capacity_from_page = float(page_res[1].split(' ')[1])
 
-        allocation_from_cmd = self.machine.execute('sudo virsh pool-info {} | grep Allocation'.format(name)).split(' ')
-        capacity_from_cmd = self.machine.execute('sudo virsh pool-info {} | grep Capacity'.format(name)).split(' ')
-
-        if allocation_from_cmd[-1].strip() == 'MiB':
-            allocation_from_cmd = '%.2f' % (float(allocation_from_cmd[-2]) / 1024)
-        else:
-            allocation_from_cmd = '%.2f' % float(allocation_from_cmd[-2])
-        if capacity_from_cmd[-1].strip() == 'MiB':
-            capacity_from_cmd = '%.2f' % (float(capacity_from_cmd[-2]) / 1024)
-        else:
-            capacity_from_cmd = '%.2f' % float(capacity_from_cmd[-2])
+        cmd_res = self.machine.execute(
+            'sudo virsh pool-info --bytes {}'.format(name))
+        allocation_from_cmd = round(float(re.compile(r'Allocation:.*')
+                                          .search(cmd_res)
+                                          .group(0)
+                                          .split(' ')[-1]) / 1024 / 1024 / 1024,
+                                    2)
+        capacity_from_cmd = round(float(re.compile(r'Capacity:.*')
+                                        .search(cmd_res)
+                                        .group(0)
+                                        .split(' ')[-1]) / 1024 / 1024 / 1024,
+                                  2)
 
         self.assertEqual(allocation_from_page, allocation_from_cmd)
         self.assertEqual(capacity_from_page, capacity_from_cmd)
@@ -252,3 +248,201 @@ class MachinesStoragePoolTestSuite(MachinesLib):
             self.wait_xpath('/html/body/div[2]/div[2]/div/div/div[3]/button[2]',
                             cond=clickable))
         self.wait_css('#{}-name'.format(el_id_prefix), cond=invisible)
+
+    @skipIf(os.environ.get('NFS') is None,
+            'need an environment variable whose name is NFS')
+    def testDeleteNFSPool(self):
+        name = 'test_delete_nfs_pool_' + self.random_string()
+        self.storage_pool['pool'] = name
+
+        path = '/home/' + name
+        self.machine.execute('sudo mkdir -p {}'.format(path))
+
+        self.click(self.wait_text('Storage Pools', cond=clickable))
+        el_prefix_id = self.create_storage_by_ui(name=name,
+                                                 target_path=path,
+                                                 host=os.environ.get('NFS'),
+                                                 source_path='/home/nfs',
+                                                 storage_type='netfs')
+        self.wait_css('#{}-name'.format(el_prefix_id))
+
+        vol_name = 'vol_' + self.random_string()
+        vol_path = path + '/' + vol_name
+
+        self.machine.execute('sudo virsh vol-create-as {} {} 100M --format qcow2'.format(name, vol_name))
+        self.click(self.wait_css('#{}-name'.format(el_prefix_id)))
+        self.click(self.wait_css('#delete-{}'.format(el_prefix_id), cond=clickable))
+        self.click(self.wait_css(
+            'body > div:nth-child(2) > div.fade.in.modal > div > div > div.modal-footer > button.btn.btn-danger',
+            cond=clickable))
+        self.wait_css('#{}-name'.format(el_prefix_id), cond=invisible)
+
+        self.create_storage_by_ui(name=name,
+                                  target_path=path,
+                                  host=os.environ.get('NFS'),
+                                  source_path='/home/nfs',
+                                  storage_type='netfs')
+        self.wait_css('#{}-name'.format(el_prefix_id))
+        # verify the volume
+        self.machine.execute('test -f {}'.format(vol_path))
+
+        self.click(self.wait_css('#{}-name'.format(el_prefix_id)))
+        self.click(self.wait_css('#delete-{}'.format(el_prefix_id), cond=clickable))
+        # checkbox needs twice click
+        self.send_keys(self.wait_css('#storage-pool-delete-volumes'),
+                       Keys.SPACE,
+                       clear=False)
+        self.click(self.wait_css(
+            'body > div:nth-child(2) > div.fade.in.modal > div > div > div.modal-footer > button.btn.btn-danger',
+            cond=clickable))
+        self.wait_css('#{}-name'.format(el_prefix_id), cond=invisible)
+
+        self.create_storage_by_ui(name=name,
+                                  target_path=path,
+                                  host=os.environ.get('NFS'),
+                                  source_path='/home/nfs',
+                                  storage_type='netfs')
+        self.wait_css('#{}-name'.format(el_prefix_id))
+        self.machine.execute('! test -f {}'.format(vol_path))
+
+    def testDeleteISCSIPool(self):
+        pool_name = 'test_iscsi_deletation_' + MachinesLib.random_string()
+        disc = Disc(self.machine)
+        iscsi_iqn = disc.addtarget(
+            'test-' + MachinesLib.random_string(),
+            size='100M')
+
+        # Delete active ISCSI Storage Pool
+        self.click(self.wait_text('Storage Pools', cond=clickable))
+        el_prefix_id = self.create_storage_by_ui(name=pool_name,
+                                                 storage_type='iscsi',
+                                                 target_path='/dev/disk/by-path',
+                                                 host='127.0.0.1',
+                                                 source_path=iscsi_iqn)
+        self.click(
+            self.wait_css('#{}-name'.format(el_prefix_id), cond=clickable))
+
+        self.click(
+            self.wait_css('#delete-{}'.format(el_prefix_id), cond=clickable))
+        self.click(
+            self.wait_css('body > div:nth-child(2) > div.fade.in.modal > div > div > div.modal-footer > button.btn.btn-danger',
+                          cond=clickable))
+        self.wait_css('#{}-name'.format(el_prefix_id), cond=invisible)
+
+        cmd_res = self.machine.execute(
+            'sudo virsh pool-list --all | awk \'NR>=3{if($0!="")print $1}\'')
+        self.assertTrue(pool_name not in cmd_res)
+
+        # Delete inactive ISCSI Storage Pool
+        el_prefix_id = self.create_storage_by_ui(name=pool_name,
+                                                 storage_type='iscsi',
+                                                 target_path='/dev/disk/by-path',
+                                                 host='127.0.0.1',
+                                                 source_path=iscsi_iqn)
+        self.click(
+            self.wait_css('#{}-name'.format(el_prefix_id), cond=clickable))
+
+        self.click(self.wait_css('#deactivate-{}'.format(el_prefix_id),
+                                 cond=clickable))
+        self.wait_css('#{}-state'.format(el_prefix_id),
+                      cond=text_in,
+                      text_='inactive')
+
+        self.click(
+            self.wait_css('#delete-{}'.format(el_prefix_id), cond=clickable))
+        self.click(
+            self.wait_css('body > div:nth-child(2) > div.fade.in.modal > div > div > div.modal-footer > button.btn.btn-danger',
+                          cond=clickable))
+        self.wait_css('#{}-name'.format(el_prefix_id), cond=invisible)
+
+        cmd_res = self.machine.execute(
+            'sudo virsh pool-list --all | awk \'NR>=3{if($0!="")print $1}\'')
+        self.assertTrue(pool_name not in cmd_res)
+
+        disc.clear(del_disk=False)
+
+    def testDeletePddPool(self):
+        disc = Disc(self.machine)
+        device_suffix = 'test' + MachinesLib.random_string()
+        device = disc.adddisc(device_suffix, '100M')
+        self.machine.execute('sudo dd if=/dev/zero of={} bs=4K count=25600'.format(device))
+        disc.createparttable(device_suffix)
+
+        vol_name = device.split('/')[-1] + '1'
+        print(vol_name)
+        pdd_name = 'test_pdd_deletion_' + MachinesLib.random_string()
+
+        self.click(self.wait_text('Storage Pools', cond=clickable))
+        el_prefix_id = self.create_storage_by_ui(name=pdd_name,
+                                                    storage_type='disk',
+                                                    target_path='/media',
+                                                    source_path=device,
+                                                    parted='dos')
+        self.click(self.wait_css('#{}-name'.format(el_prefix_id), cond=clickable))
+        self.machine.execute('sudo virsh vol-create-as {} {} --capacity {}'.format(pdd_name, vol_name, '10M'))
+        
+        self.click(self.wait_css('#delete-{}'.format(el_prefix_id),
+                                 cond=clickable))
+        self.click(self.wait_css('body > div:nth-child(2) > div.fade.in.modal > div > div > div.modal-footer > button.btn.btn-danger',
+                                 cond=clickable))
+        self.wait_css('#{}-name'.format(el_prefix_id), cond=invisible)
+        self.assertIn(vol_name, self.machine.execute('lsblk'))
+
+        el_prefix_id = self.create_storage_by_ui(name=pdd_name,
+                                                 storage_type='disk',
+                                                 target_path='/media',
+                                                 source_path=device,
+                                                 parted='dos')
+        self.click(self.wait_css('#{}-name'.format(el_prefix_id), cond=clickable))
+        self.click(self.wait_css('#deactivate-{}'.format(el_prefix_id), cond=clickable))
+        self.wait_css('#{}-state'.format(el_prefix_id),
+                      cond=text_in,
+                      text_='inactive')
+        self.click(self.wait_css('#delete-{}'.format(el_prefix_id), cond=clickable))
+        self.click(self.wait_css('body > div:nth-child(2) > div.fade.in.modal > div > div > div.modal-footer > button.btn.btn-danger',
+                                 cond=clickable))
+        self.wait_css('#{}-name'.format(el_prefix_id), cond=invisible)
+        self.assertIn(vol_name, self.machine.execute('lsblk'))
+
+        el_prefix_id = self.create_storage_by_ui(name=pdd_name,
+                                                 storage_type='disk',
+                                                 target_path='/media',
+                                                 source_path=device,
+                                                 parted='dos')
+        self.click(self.wait_css('#{}-name'.format(el_prefix_id), cond=clickable))
+        self.click(self.wait_css('#delete-{}'.format(el_prefix_id), cond=clickable))
+        self.check_box(self.wait_css('#storage-pool-delete-volumes', cond=clickable))
+        self.click(self.wait_css('body > div:nth-child(2) > div.fade.in.modal > div > div > div.modal-footer > button.btn.btn-danger',
+                                 cond=clickable))
+        self.wait_css('#{}-name'.format(el_prefix_id), cond=invisible)
+        self.assertNotIn(vol_name, self.machine.execute('lsblk'))
+
+        disc.clear()
+
+    def testDeleteVolume(self):
+        pool_name = 'test' + MachinesLib.random_string()
+        pool_path = '/home/{}'.format(pool_name)
+        vol_name = 'test_vol_' + MachinesLib.random_string()
+        # Create storage pool and volume
+        self.machine.execute('sudo mkdir {}'.format(pool_path))
+        self.machine.execute('sudo virsh pool-create-as {} {} --target {}'.format(pool_name, 'dir', pool_path))
+        self.machine.execute('sudo virsh vol-create-as {} {} {}'.format(pool_name, vol_name, '10M'))
+        # Refresh to reload the pool information
+        self.click(self.wait_text('Storage Pools', cond=clickable))
+        self.refresh_machines_page()
+        # Check information about the pool and volume which is created above
+        self.click(self.wait_css('#pool-{}-system-name'.format(pool_name), cond=clickable))
+        self.click(self.wait_css('#pool-{}-system-storage-volumes'.format(pool_name), cond=clickable))
+        self.wait_css('#pool-{}-system-volume-{}-name'.format(pool_name, vol_name), cond=clickable)
+        # Delet the volume
+        self.wait_css('#storage-volumes-delete', cond=invisible)
+        self.check_box(self.wait_css('tr[data-row-id="pool-{}-system-volume-{}"] > td:nth-child(2) > input'.format(pool_name, vol_name),
+                                     cond=clickable))
+        self.wait_css('#storage-volumes-delete',
+                      cond=text_in,
+                      text_='Delete 1 volume')
+        self.click(self.wait_css('#storage-volumes-delete', cond=clickable))
+        # Check
+        self.wait_css('#pool-{}-system-volume-{}-name'.format(pool_name, vol_name), cond=invisible)
+        self.assertNotIn(vol_name,
+                         self.machine.execute('ls {}'.format(pool_path)))
