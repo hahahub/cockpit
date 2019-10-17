@@ -145,6 +145,7 @@ class MachinesBasicTestSuite(MachinesLib):
     def testCreateVMWithUrl(self):
         name = 'test_url'
         self.vm_stop_list.append(name)
+
         # workaround
         self.create_vm_by_ui(connection='session',
                              name=name,

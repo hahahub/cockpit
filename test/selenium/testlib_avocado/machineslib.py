@@ -4,6 +4,7 @@ import secrets
 from time import sleep
 from .timeoutlib import wait
 from .seleniumlib import SeleniumTest, clickable, text_in, invisible
+from .exceptions import SeleniumElementFailure
 
 
 SPICE_XML = """
@@ -271,7 +272,7 @@ class MachinesLib(SeleniumTest):
                              overridetry=10,
                              fatal=False):
             self.click(self.wait_text("show more"))
-            self.log.error(self.wait_css('#app > div > section > div > div > p').text)
+            raise SeleniumElementFailure(self.wait_css('#app > div > section > div > div > p').text)
         self.wait_css('#vm-{}-row'.format(name))
 
     def create_storage(self, name, path, active=False):
