@@ -108,7 +108,6 @@ class MachinesStoragePoolTestSuite(MachinesLib):
         page_res = self.wait_css('tr[data-row-id="' + pool_name + '"] > td:nth-child(4)').text.split('/')
         allocation_from_page = float(page_res[0].strip())
         capacity_from_page = float(page_res[1].split(' ')[1])
-
         cmd_res = self.machine.execute(
             'sudo virsh pool-info --bytes {}'.format(name))
         allocation_from_cmd = round(float(re.compile(r'Allocation:.*')
@@ -255,8 +254,8 @@ class MachinesStoragePoolTestSuite(MachinesLib):
             self.wait_xpath('/html/body/div[2]/div[2]/div/div/div[3]/button[2]',
                             cond=clickable))
         self.wait_css('#{}-name'.format(el_id_prefix), cond=invisible)
-        
-    @skipIf(os.environ.get('NFS') is None, 
+
+    @skipIf(os.environ.get('NFS') is None,
             'need an environment variable whose name is NFS')
     def testDeleteNFSPool(self):
         name = 'test_delete_nfs_pool_' + self.random_string()
@@ -374,11 +373,11 @@ class MachinesStoragePoolTestSuite(MachinesLib):
         device = disc.adddisc(device_suffix, '100M')
         self.machine.execute('sudo dd if=/dev/zero of={} bs=4K count=25600'.format(device))
         disc.createparttable(device_suffix)
-        
+
         vol_name = device.split('/')[-1] + '1'
         print(vol_name)
         pdd_name = 'test_pdd_deletion_' + MachinesLib.random_string()
-        
+
         self.click(self.wait_text('Storage Pools', cond=clickable))
         el_prefix_id = self.create_storage_by_ui(name=pdd_name,
                                                     storage_type='disk',
@@ -389,17 +388,17 @@ class MachinesStoragePoolTestSuite(MachinesLib):
         self.machine.execute('sudo virsh vol-create-as {} {} --capacity {}'.format(pdd_name, vol_name, '10M'))
         
         self.click(self.wait_css('#delete-{}'.format(el_prefix_id),
-                                    cond=clickable))
+                                 cond=clickable))
         self.click(self.wait_css('body > div:nth-child(2) > div.fade.in.modal > div > div > div.modal-footer > button.btn.btn-danger',
-                                    cond=clickable))
+                                 cond=clickable))
         self.wait_css('#{}-name'.format(el_prefix_id), cond=invisible)
         self.assertIn(vol_name, self.machine.execute('lsblk'))
 
         el_prefix_id = self.create_storage_by_ui(name=pdd_name,
-                                                    storage_type='disk',
-                                                    target_path='/media',
-                                                    source_path=device,
-                                                    parted='dos')
+                                                 storage_type='disk',
+                                                 target_path='/media',
+                                                 source_path=device,
+                                                 parted='dos')
         self.click(self.wait_css('#{}-name'.format(el_prefix_id), cond=clickable))
         self.click(self.wait_css('#deactivate-{}'.format(el_prefix_id), cond=clickable))
         self.wait_css('#{}-state'.format(el_prefix_id),
@@ -407,20 +406,20 @@ class MachinesStoragePoolTestSuite(MachinesLib):
                       text_='inactive')
         self.click(self.wait_css('#delete-{}'.format(el_prefix_id), cond=clickable))
         self.click(self.wait_css('body > div:nth-child(2) > div.fade.in.modal > div > div > div.modal-footer > button.btn.btn-danger',
-                                    cond=clickable))
+                                 cond=clickable))
         self.wait_css('#{}-name'.format(el_prefix_id), cond=invisible)
         self.assertIn(vol_name, self.machine.execute('lsblk'))
 
         el_prefix_id = self.create_storage_by_ui(name=pdd_name,
-                                                    storage_type='disk',
-                                                    target_path='/media',
-                                                    source_path=device,
-                                                    parted='dos')
+                                                 storage_type='disk',
+                                                 target_path='/media',
+                                                 source_path=device,
+                                                 parted='dos')
         self.click(self.wait_css('#{}-name'.format(el_prefix_id), cond=clickable))
         self.click(self.wait_css('#delete-{}'.format(el_prefix_id), cond=clickable))
         self.check_box(self.wait_css('#storage-pool-delete-volumes', cond=clickable))
         self.click(self.wait_css('body > div:nth-child(2) > div.fade.in.modal > div > div > div.modal-footer > button.btn.btn-danger',
-                                    cond=clickable))
+                                 cond=clickable))
         self.wait_css('#{}-name'.format(el_prefix_id), cond=invisible)
         self.assertNotIn(vol_name, self.machine.execute('lsblk'))
 
@@ -445,11 +444,11 @@ class MachinesStoragePoolTestSuite(MachinesLib):
         self.wait_css('#storage-volumes-delete', cond=invisible)
         self.check_box(self.wait_css('tr[data-row-id="pool-{}-system-volume-{}"] > td:nth-child(2) > input'.format(pool_name, vol_name),
                                      cond=clickable))
-        self.wait_css('#storage-volumes-delete', 
-                      cond=text_in, 
+        self.wait_css('#storage-volumes-delete',
+                      cond=text_in,
                       text_='Delete 1 volume')
         self.click(self.wait_css('#storage-volumes-delete', cond=clickable))
         # Check
         self.wait_css('#pool-{}-system-volume-{}-name'.format(pool_name, vol_name), cond=invisible)
-        self.assertNotIn(vol_name, 
+        self.assertNotIn(vol_name,
                          self.machine.execute('ls {}'.format(pool_path)))
