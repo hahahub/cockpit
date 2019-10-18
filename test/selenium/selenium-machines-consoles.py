@@ -41,7 +41,7 @@ class MachinesConsolesTestSuite(MachinesLib):
         self.click(self.wait_css('#vm-{}-consoles-launch'.format(name), cond=clickable))
         self.wait_css('#dynamically-generated-file', cond=present)
         # Check more info link
-        self.click(self.wait_css('.machines-desktop-viewer-block .link-button', cond=clickable))
+        self.click(self.wait_css('p[class="machines-desktop-viewer-block"] > a', cond=clickable))
         # Check manual connection info
         self.wait_css("#vm-{}-consoles-manual-address".format(name), cond=text_in, text_="127.0.0.1")
         self.wait_css("#vm-{}-consoles-manual-port-spice".format(name), cond=text_in, text_="5900")
@@ -55,12 +55,12 @@ class MachinesConsolesTestSuite(MachinesLib):
         # Open serial console
         self.click(self.wait_css('#vm-{}-consoles'.format(name), cond=clickable))
         self.select_by_text(self.wait_id('console-type-select'), 'Serial Console')
-        self.wait_css(".xterm-accessibility-tree")
+        self.wait_css("div.terminal canvas.xterm-text-layer")
 
         # Disconnect
         self.click(self.wait_css("#{}-serialconsole-disconnect".format(name), cond=clickable))
-        self.wait_text("Disconnected from serial console. Click the Connect button.")
+        self.wait_text("Disconnected from serial console")
 
         # Reconnect
-        self.click(self.wait_css("#{}-serialconsole-connect".format(name), cond=clickable))
-        self.wait_css(".xterm-accessibility-tree")
+        self.click(self.wait_css("#{}-serialconsole-reconnect".format(name), cond=clickable))
+        self.wait_css("div.terminal canvas.xterm-text-layer")

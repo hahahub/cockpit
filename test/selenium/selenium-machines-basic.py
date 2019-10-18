@@ -145,11 +145,21 @@ class MachinesBasicTestSuite(MachinesLib):
     def testCreateVMWithUrl(self):
         name = 'test_url'
         self.vm_stop_list.append(name)
-
-        self.create_vm_by_ui(
-            connection='session', name=name, source_type='url', source=os.environ.get('URLSOURCE'), immediately_start=True)
+        # workaround
+        self.create_vm_by_ui(connection='session',
+                             name=name,
+                             source_type='url',
+                             source=os.environ.get('URLSOURCE'),
+                             os_vendor='CentOS',
+                             operating_system='centos7.0',
+                             immediately_start=True)
 
         self.wait_css('#vm-{}-row'.format(name))
-        self.wait_css('#vm-{}-state'.format(name), cond=text_in, text_='creating VM installation')
-        self.wait_css('#vm-{}-state'.format(name), cond=text_in, text_='running')
+        self.wait_css('#vm-{}-state'.format(name),
+                      cond=text_in,
+                      text_='creating VM installation')
+        self.wait_css('#vm-{}-state'.format(name),
+                      cond=text_in,
+                      text_='running',
+                      overridetry=120)
         self.wait_css('div.toolbar-pf-results canvas')

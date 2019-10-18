@@ -244,8 +244,9 @@ class MachinesLib(SeleniumTest):
                     self.select_by_text(item, sl.text)
                     break
 
-        if os_vendor and operating_system:
+        if os_vendor:
             self.select_by_value(self.wait_css('#vendor-select'), os_vendor)
+        if operating_system:
             self.select_by_value(self.wait_css('#system-select'), operating_system)
 
         if mem_unit == 'M':
