@@ -92,6 +92,19 @@ STORAGE_XML = """
 </pool>
 """
 
+NETWORK_XML = """
+<network>
+  <name>{name}</name>
+  <forward mode='nat'>
+    <nat>
+      <port start='1024' end='65535'/>
+    </nat>
+  </forward>
+  <ip address='{gateway}' netmask='{net_mask}'>
+  </ip>
+</network>
+"""
+
 SYS_POOL_PATH = "/var/lib/libvirt/images"
 SYS_LOG_PATH = "/var/log/libvirt"
 
@@ -175,6 +188,7 @@ class MachinesLib(SeleniumTest):
         self.virshvm = None
         self.storage_pool = {}
         self.vm_stop_list = []
+        self.net_delete_list = {}
 
         self.login()
         self.click(self.wait_link('Virtual Machines', cond=clickable))
@@ -189,14 +203,17 @@ class MachinesLib(SeleniumTest):
             for vm in self.vm_stop_list:
                 self.destroy_vm(vm, connection='session')
 
+        while len(self.net_delete_list) != 0:
+            net_item = self.net_delete_list.popitem()
+            self.delete_network_with_cmd(net_item[0], net_item[1])
+
         # clean some storage resource
         while len(self.storage_pool) != 0:
-            item = self.storage_pool.popitem()
-            if item[0] == 'disk':
-                self.machine.execute('sudo virsh vol-delete {} {}'.format(item[1][0], item[1][1]))
-            elif item[0] == 'pool':
-                self.machine.execute(
-                    'sudo virsh pool-destroy {} && sudo virsh pool-undefine {}'.format(item[1], item[1]))
+            storage_pool_item = self.storage_pool.popitem()
+            if storage_pool_item[0] == 'disk':
+                self.machine.execute('sudo virsh vol-delete {} {}'.format(storage_pool_item[1][0], storage_pool_item[1][1]))
+            elif storage_pool_item[0] == 'pool':
+                self.machine.execute('sudo virsh pool-destroy {} && sudo virsh pool-undefine {}'.format(storage_pool_item[1], storage_pool_item[1]))
 
     def wait_dialog_disappear(self):
         # loop for the dialog disappear and it will break after trying with 40 times
@@ -336,6 +353,31 @@ class MachinesLib(SeleniumTest):
         self.wait_css('#' + el_id_prefix + '-name')
 
         return el_id_prefix
+
+    def create_network(self,
+                       name,
+                       gateway='192.168.1.1',
+                       net_mask='255.255.255.0',
+                       active=False,
+                       persistent=True):
+        net_xml = NETWORK_XML.format(name=name,
+                                     gateway=gateway,
+                                     net_mask=net_mask)
+        self.machine.execute(
+            'sudo su -c "echo \\"{}\\" > /tmp/xml_net"'.format(net_xml))
+
+        cmd = 'sudo virsh net-define /tmp/xml_net'
+        if not persistent:
+            cmd = 'sudo virsh net-create /tmp/xml_net'
+        elif active:
+            cmd += ' && sudo virsh net-start {}'.format(name)
+
+        self.machine.execute(cmd)
+
+    def delete_network_with_cmd(self, name, active):
+        if active:
+            self.machine.execute('sudo virsh net-destroy {}'.format(name))
+        self.machine.execute('sudo virsh net-undefine {}'.format(name))
 
     def non_root_user_operations(self,
                                  user_group=None,

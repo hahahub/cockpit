@@ -53,3 +53,106 @@ class MachinesNetworksTestSuite(MachinesLib):
         self.click(self.wait_css('#app div a'))
         self.wait_css('#networks-listing', cond=invisible)
         self.wait_css('#virtual-machines-listing')
+
+    def testCheckStateOfNetwork(self):
+        net_name = 'test_net' + MachinesLib.random_string()
+        self.net_delete_list[net_name] = True
+        self.create_network(net_name,
+                            active=True)
+
+        self.click(self.wait_css('#card-pf-networks > h2 > button', 
+                                 cond=clickable))
+        self.click(self.wait_css('#network-{}-system-name'.format(net_name),
+                                 cond=clickable))
+        
+        self.click(self.wait_css('#deactivate-network-{}-system'.format(net_name)))
+        cmd_res = self.machine.execute('sudo virsh net-info {} | grep Active'.format(net_name))
+        
+        self.assertEqual(cmd_res.strip().split(" ")[-1],
+                         'no')
+        self.wait_css('#network-{}-system-state'.format(net_name),
+                      cond=text_in,
+                      text_='inactive')
+
+        self.click(self.wait_css('#activate-network-{}-system'.format(net_name)))
+        cmd_res = self.machine.execute('sudo virsh net-info {} | grep Active'.format(net_name))
+        
+        self.assertEqual(cmd_res.strip().split(" ")[-1],
+                         'yes')
+        self.wait_css('#network-{}-system-state'.format(net_name),
+                      cond=text_in,
+                      text_='active')
+
+    def testNetworkAutoStart(self):
+        net_name = 'test_net' + MachinesLib.random_string()
+        self.net_delete_list[net_name] = True
+        self.create_network(net_name,
+                            active=True)
+
+        self.click(self.wait_css('#card-pf-networks > h2 > button', 
+                                 cond=clickable))
+        self.click(self.wait_css('#network-{}-system-name'.format(net_name),
+                                 cond=clickable))
+
+        self.check_box(self.wait_css('#network-{}-system-autostart-checkbox'.format(net_name), cond=clickable))
+        cmd_res = self.machine.execute('sudo virsh net-info {} | grep Autostart'.format(net_name))
+        self.assertEqual(cmd_res.strip().split(" ")[-1], 'yes')
+
+        self.check_box(self.wait_css('#network-{}-system-autostart-checkbox'.format(net_name), cond=clickable), checked=False)
+        cmd_res = self.machine.execute('sudo virsh net-info {} | grep Autostart'.format(net_name))
+        self.assertEqual(cmd_res.strip().split(" ")[-1], 'no')
+
+    def testNetworkDeletion(self):
+        self.click(self.wait_css('#card-pf-networks > h2 > button',
+                                 cond=clickable))
+
+        net_1 = 'test_net_deletion_' + MachinesLib.random_string()
+
+        self.create_network(net_1, active=True)
+
+        self.click(self.wait_css('#network-{}-system-name'.format(net_1),
+                                 cond=clickable))
+        self.click(self.wait_css('#delete-network-{}-system'.format(net_1),
+                                 cond=clickable))
+        self.click(self.wait_css('body > div:nth-child(2) button.btn.btn-danger',
+                                 cond=clickable))
+        self.wait_css('body > div:nth-child(2) div.alert.alert-danger',
+                      cond=invisible)
+
+        self.wait_css('#network-{}-system-name'.format(net_1),
+                      cond=invisible)
+        self.assertNotIn(net_1,
+                         self.machine.execute('sudo virsh net-list --all'))
+
+        self.create_network(net_1)
+
+        self.click(self.wait_css('#network-{}-system-name'.format(net_1),
+                                 cond=clickable))
+        self.click(self.wait_css('#delete-network-{}-system'.format(net_1),
+                                 cond=clickable))
+        self.click(self.wait_css('body > div:nth-child(2) button.btn.btn-danger',
+                                 cond=clickable))
+        self.wait_css('body > div:nth-child(2) div.alert.alert-danger',
+                      cond=invisible)
+
+        self.wait_css('#network-{}-system-name'.format(net_1),
+                      cond=invisible)
+        self.assertNotIn(net_1,
+                         self.machine.execute('sudo virsh net-list --all'))
+        # non-persistent resources will cause an error
+        self.create_network(net_1,
+                            persistent=False)
+
+        self.click(self.wait_css('#network-{}-system-name'.format(net_1),
+                                 cond=clickable))
+        self.click(self.wait_css('#delete-network-{}-system'.format(net_1),
+                                 cond=clickable))
+        self.click(self.wait_css('body > div:nth-child(2) button.btn.btn-danger',
+                                 cond=clickable))
+        self.wait_css('body > div:nth-child(2) div.alert.alert-danger',
+                      cond=invisible)
+
+        self.wait_css('#network-{}-system-name'.format(net_1),
+                      cond=invisible)
+        self.assertNotIn(net_1,
+                         self.machine.execute('sudo virsh net-list --all'))
