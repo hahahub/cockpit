@@ -5,6 +5,7 @@ from testlib_avocado.timeoutlib import wait
 from testlib_avocado.timeoutlib import TimeoutError
 from testlib_avocado.seleniumlib import clickable, invisible, text_in
 from testlib_avocado.machineslib import MachinesLib
+from selenium.webdriver.common.keys import Keys
 
 
 class MachinesBasicTestSuite(MachinesLib):
@@ -155,3 +156,29 @@ class MachinesBasicTestSuite(MachinesLib):
         self.wait_css('#vm-{}-state'.format(name), cond=text_in, text_='creating VM installation')
         self.wait_css('#vm-{}-state'.format(name), cond=text_in, text_='running')
         self.wait_css('div.toolbar-pf-results canvas')
+
+    def testCreateVMWithExisting(self):
+        name = 'test_existing_' + MachinesLib.random_string()
+        base_path ='/var/lib/libvirt/images/cirros.qcow2'
+        dest_path = '/home/cirros.qcow2'
+        cmd = 'sudo test -f {base} && sudo cp {base} {dest} && sudo chmod 777 {dest}'
+        self.machine.execute(cmd.format(base=base_path, dest=dest_path))
+        self.vm_stop_list.append(name)
+        
+        self.create_vm_by_ui(connection='session',
+                             name=name,
+                             source_type='disk_image',
+                             source=dest_path)
+
+    def testCheckOSRecommendMemory(self):
+        self.click(self.wait_css('#create-new-vm', cond=clickable))
+
+        self.send_keys(self.wait_css('label[for=os-select] + div > div > div > input'),
+                       'SUSE CaaS Platform 3.0' + Keys.ARROW_DOWN + Keys.ENTER)
+        self.assertEqual(self.wait_css('#memory-size-helpblock > p:nth-child(1)').text,
+                         'The selected Operating System has recommended memory 8 GiB')
+
+        self.send_keys(self.wait_css('label[for=os-select] + div > div > div > input'),
+                       'Pop!_OS 18.04' + Keys.ARROW_DOWN + Keys.ENTER)
+        self.assertEqual(self.wait_css('#memory-size-helpblock > p:nth-child(1)').text,
+                         'The selected Operating System has recommended memory 4 GiB')
