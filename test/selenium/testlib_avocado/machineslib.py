@@ -249,12 +249,14 @@ class MachinesLib(SeleniumTest):
             self.select_by_value(self.wait_css('#source-type'), source_type)
 
         filename = source.rsplit("/", 1)[-1]
-        if source_type in ['file', 'disk_image', 'pxe']:
+        if source_type == 'file':
             self.send_keys(self.wait_css('label[for=source-file] + div input[type=text]'), source, ctrla=True)
             # click on filename link if appear dialog window
             element = self.wait_link(filename, fatal=False, overridetry=3, cond=clickable)
             if element:
                 self.click(element)
+        elif source_type == 'disk_image':
+            self.send_keys(self.wait_css('label[for=source-disk] + div input[type=text]'), source, ctrla=True)
         elif source_type == 'url':
             self.send_keys(self.wait_css('#source-url'), source)
         elif source_type == 'pxe':
