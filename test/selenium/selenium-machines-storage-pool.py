@@ -379,13 +379,13 @@ class MachinesStoragePoolTestSuite(MachinesLib):
 
         self.click(self.wait_text('Storage Pools', cond=clickable))
         el_prefix_id = self.create_storage_by_ui(name=pdd_name,
-                                                    storage_type='disk',
-                                                    target_path='/media',
-                                                    source_path=device,
-                                                    parted='dos')
+                                                 storage_type='disk',
+                                                 target_path='/media',
+                                                 source_path=device,
+                                                 parted='dos')
         self.click(self.wait_css('#{}-name'.format(el_prefix_id), cond=clickable))
         self.machine.execute('sudo virsh vol-create-as {} {} --capacity {}'.format(pdd_name, vol_name, '10M'))
-        
+
         self.click(self.wait_css('#delete-{}'.format(el_prefix_id),
                                  cond=clickable))
         self.click(self.wait_css('body > div:nth-child(2) > div.fade.in.modal > div > div > div.modal-footer > button.btn.btn-danger',
@@ -456,7 +456,7 @@ class MachinesStoragePoolTestSuite(MachinesLib):
         name = 'staticvm'
 
         self.create_vm(name)
-        
+
         self.click(self.wait_text('Storage Pools', cond=clickable))
         self.click(self.wait_css('#pool-default-system-name', cond=clickable))
         self.click(self.wait_css('#pool-default-system-storage-volumes', cond=clickable))

@@ -280,13 +280,13 @@ class MachinesLib(SeleniumTest):
                        mem,
                        clear=False,
                        ctrla=True)
-        # Select volume if the type of storage_pool is not 'NewVolume' and 'NoStorage' 
+        # Select volume if the type of storage_pool is not 'NewVolume' and 'NoStorage'
         # and volume_name is not None
         if storage_pool not in ['NewVolume', 'NoStorage'] and volume_name:
             self.select_by_value(self.wait_css('#storage-volume-select',
                                                cond=clickable),
                                  volume_name)
-        # Set storage size if the VM is not created from importing 
+        # Set storage size if the VM is not created from importing
         # and the type of storage_pool is not 'NewVolume'
         if source_type != 'disk_image' and storage_pool == 'NewVolume':
             if storage_unit == 'M':
@@ -298,7 +298,7 @@ class MachinesLib(SeleniumTest):
                            ctrla=True)
         # Check 'Immediately Start VM'
         self.check_box(self.wait_css('#start-vm'), immediately_start)
-        
+
         self.click(self.wait_css('#create-vm-dialog .modal-footer .btn.btn-primary', cond=clickable))
         # Some checks after creation
         self.wait_dialog_disappear()

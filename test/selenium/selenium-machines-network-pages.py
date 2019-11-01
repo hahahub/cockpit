@@ -48,7 +48,7 @@ class MachinesNetworksTestSuite(MachinesLib):
 
         net_cmd_total = int(self.machine.execute('sudo virsh net-list --all | awk \'NR>3{if($0!="")print}\' | wc -l')) + int(
             self.machine.execute('sudo virsh net-list --all | awk \'NR>3{if($0!="")print}\' | wc -l'))
-        
+
         self.assertEqual(net_cmd_total, page_active + page_inactive)
         self.click(self.wait_css('#app div a'))
         self.wait_css('#networks-listing', cond=invisible)
@@ -60,14 +60,14 @@ class MachinesNetworksTestSuite(MachinesLib):
         self.create_network(net_name,
                             active=True)
 
-        self.click(self.wait_css('#card-pf-networks > h2 > button', 
+        self.click(self.wait_css('#card-pf-networks > h2 > button',
                                  cond=clickable))
         self.click(self.wait_css('#network-{}-system-name'.format(net_name),
                                  cond=clickable))
-        
+
         self.click(self.wait_css('#deactivate-network-{}-system'.format(net_name)))
         cmd_res = self.machine.execute('sudo virsh net-info {} | grep Active'.format(net_name))
-        
+
         self.assertEqual(cmd_res.strip().split(" ")[-1],
                          'no')
         self.wait_css('#network-{}-system-state'.format(net_name),
@@ -76,7 +76,7 @@ class MachinesNetworksTestSuite(MachinesLib):
 
         self.click(self.wait_css('#activate-network-{}-system'.format(net_name)))
         cmd_res = self.machine.execute('sudo virsh net-info {} | grep Active'.format(net_name))
-        
+
         self.assertEqual(cmd_res.strip().split(" ")[-1],
                          'yes')
         self.wait_css('#network-{}-system-state'.format(net_name),
@@ -89,7 +89,7 @@ class MachinesNetworksTestSuite(MachinesLib):
         self.create_network(net_name,
                             active=True)
 
-        self.click(self.wait_css('#card-pf-networks > h2 > button', 
+        self.click(self.wait_css('#card-pf-networks > h2 > button',
                                  cond=clickable))
         self.click(self.wait_css('#network-{}-system-name'.format(net_name),
                                  cond=clickable))
