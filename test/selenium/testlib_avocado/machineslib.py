@@ -229,32 +229,30 @@ class MachinesLib(SeleniumTest):
                         source_type='file',
                         source='/var/lib/libvirt/images/cirros.qcow2',
                         operating_system='CirrOS 0.4.0',
+                        storage_pool='NewVolume',
+                        volume_name=None,
                         mem=1,
                         mem_unit='G',
                         storage=10,
                         storage_unit='G',
                         immediately_start=False):
+        # import or create
         if source_type == 'disk_image':
             self.click(self.wait_css('#import-vm-disk', cond=clickable))
         else:
             self.click(self.wait_css('#create-new-vm', cond=clickable))
         self.wait_css('#create-vm-dialog')
-
+        # switch connection
         if connection == 'session':
             self.click(self.wait_css("#connection label:last-of-type", cond=clickable))
-
+        # input the name of the VM
         self.send_keys(self.wait_css('#vm-name'), name)
-
+        # choose 'Installation Type'
         if source_type != 'disk_image':
             self.select_by_value(self.wait_css('#source-type'), source_type)
-
-        filename = source.rsplit("/", 1)[-1]
+        # According to different 'Installation Type' to input 'Installation Source'
         if source_type == 'file':
             self.send_keys(self.wait_css('label[for=source-file] + div input[type=text]'), source, ctrla=True)
-            # click on filename link if appear dialog window
-            element = self.wait_link(filename, fatal=False, overridetry=3, cond=clickable)
-            if element:
-                self.click(element)
         elif source_type == 'disk_image':
             self.send_keys(self.wait_css('label[for=source-disk] + div input[type=text]'), source, ctrla=True)
         elif source_type == 'url':
@@ -266,26 +264,43 @@ class MachinesLib(SeleniumTest):
                 if re.match('^(.*)' + source + '(.*)$', sl.text):
                     self.select_by_text(item, sl.text)
                     break
-
+        # Input 'Operating System'
         # click + clear + send_keys can make this field works well
         # , or the string can not be send to the input
         self.click(self.wait_css("label[for=os-select] + div > div > div > input"))
         self.send_keys(self.wait_css("label[for=os-select] + div > div > div > input"), operating_system + Keys.ARROW_DOWN + Keys.ENTER)
-
+        # Select the type of 'Storage'
+        self.select_by_value(self.wait_css('#storage-pool-select'),
+                             storage_pool)
+        # Set Memory
         if mem_unit == 'M':
-            self.select_by_text(self.wait_css('#memory-size-unit-select'), 'MiB')
-
-        self.send_keys(self.wait_css('#memory-size'), mem, clear=False, ctrla=True)
-
-        if source_type != 'disk_image':
+            self.select_by_text(self.wait_css('#memory-size-unit-select'),
+                                'MiB')
+        self.send_keys(self.wait_css('#memory-size'),
+                       mem,
+                       clear=False,
+                       ctrla=True)
+        # Select volume if the type of storage_pool is not 'NewVolume' and 'NoStorage' 
+        # and volume_name is not None
+        if storage_pool not in ['NewVolume', 'NoStorage'] and volume_name:
+            self.select_by_value(self.wait_css('#storage-volume-select',
+                                               cond=clickable),
+                                 volume_name)
+        # Set storage size if the VM is not created from importing 
+        # and the type of storage_pool is not 'NewVolume'
+        if source_type != 'disk_image' and storage_pool == 'NewVolume':
             if storage_unit == 'M':
-                self.select_by_text(self.wait_css('#storage-size-unit-select'), 'MiB')
-            self.send_keys(self.wait_css('#storage-size'), storage, clear=False, ctrla=True)
-
+                self.select_by_text(self.wait_css('#storage-size-unit-select'),
+                                    'MiB')
+            self.send_keys(self.wait_css('#storage-size'),
+                           storage,
+                           clear=False,
+                           ctrla=True)
+        # Check 'Immediately Start VM'
         self.check_box(self.wait_css('#start-vm'), immediately_start)
-
+        
         self.click(self.wait_css('#create-vm-dialog .modal-footer .btn.btn-primary', cond=clickable))
-
+        # Some checks after creation
         self.wait_dialog_disappear()
         self.wait_css('#create-vm-dialog', cond=invisible)
         # Record the reason of the failed
@@ -309,41 +324,37 @@ class MachinesLib(SeleniumTest):
 
     def create_storage_by_ui(self,
                              connection='system',
-                             name='storage',
+                             name='default',
                              storage_type='dir',
-                             target_path='',
-                             host='',
-                             source_path='',
-                             initiator='',
-                             parted='',
+                             target_path=None,
+                             host=None,
+                             source_path=None,
+                             initiator=None,
+                             parted=None,
                              start_up=True):
         self.click(self.wait_css('#create-storage-pool', cond=clickable))
         self.wait_css('#create-storage-pool-dialog')
 
         if connection == 'session':
-            self.select_by_value(self.wait_css('#storage-pool-dialog-connection'), 'session')
+            self.click(self.wait_css('#storage-pool-dialog-connection label:last-of-type', cond=clickable))
 
         self.send_keys(self.wait_css('#storage-pool-dialog-name'), name)
 
         if storage_type != 'dir':
             self.select_by_value(self.wait_css('#storage-pool-dialog-type'), storage_type)
 
-        if storage_type != 'iscsi-direct':
+        if storage_type != 'iscsi-direct' and target_path:
             self.send_keys(self.wait_css('label[for=storage-pool-dialog-target] + div input[type=text]'), target_path, ctrla=True)
-            element = self.wait_link(target_path.rsplit('/', 1)[-1], fatal=False, overridetry=3, cond=clickable)
-            if element:
-                self.click(element)
 
-        if storage_type == 'disk':
+        if storage_type == 'disk' and source_path and parted:
             self.send_keys(self.wait_css('label[for=storage-pool-dialog-source] + div input[type=text]'), source_path)
-            self.click(self.wait_link(source_path.rsplit('/', 1)[-1], fatal=False, overridetry=3, cond=clickable))
             self.select_by_value(self.wait_css('#storage-pool-dialog-source-format', cond=clickable), parted)
 
-        if storage_type in ['netfs', 'iscsi', 'iscsi-direct']:
+        if storage_type in ['netfs', 'iscsi', 'iscsi-direct'] and host and source_path:
             self.send_keys(self.wait_css('#storage-pool-dialog-host'), host)
             self.send_keys(self.wait_css('#storage-pool-dialog-source'), source_path)
 
-        if storage_type == 'iscsi-direct':
+        if storage_type == 'iscsi-direct' and initiator:
             self.send_keys(self.wait_css('#storage-pool-dialog-initiator'), initiator)
 
         self.check_box(self.wait_css('#storage-pool-dialog-autostart', cond=clickable), start_up)
