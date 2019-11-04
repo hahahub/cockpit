@@ -324,3 +324,153 @@ class MachinesBasicTestSuite(MachinesLib):
         self.wait_css('#tip-boot-order',
                       cond=text_in,
                       text_="Changes will take effect after shutting down the VM")
+
+    def testBootFromNetwork(self):
+        name = 'test_' + MachinesLib.random_string()
+        self.create_vm(name, state='shut off')
+
+        self.click(self.wait_css('#vm-{}-boot-order'.format(name),
+                                 cond=clickable))
+        self.click(self.wait_css('#vm-{}-order-modal-device-row-1 button.btn.btn-default'.format(name),
+                                 cond=clickable))
+        self.assertEqual(self.wait_css('#vm-{}-order-modal-device-row-0  div.list-group-item-heading'.format(name)).text,
+                         'network')
+        self.click(self.wait_css('#vm-{}-order-modal-save'.format(name), cond=clickable))
+        self.wait_css('#vm-{}-boot-order'.format(name),
+                      cond=text_in,
+                      text_='network,disk')
+
+    def testInvertUniqueBootOption(self):
+        name = 'test' + MachinesLib.random_string()
+        source_path = '/home/test' + MachinesLib.random_string()
+        self.machine.execute('sudo touch {}'.format(source_path))
+        self.machine.execute('sudo chmod 777 {}'.format(source_path))
+        self.vm_stop_list.append(name)
+
+        self.create_vm_by_ui(connection='session',
+                             name=name,
+                             source_type='disk_image',
+                             source=source_path,
+                             mem=128,
+                             mem_unit='M',
+                             immediately_start=True)
+        self.wait_css('#vm-{}-state'.format(name),
+                      cond=text_in,
+                      text_='running')
+        self.click(self.wait_css('#vm-{}-overview'.format(name), cond=clickable))
+
+        self.click(self.wait_css('#vm-{}-boot-order'.format(name),
+                                 cond=clickable))
+        self.assertFalse(
+            self.wait_css('#vm-{}-order-modal-device-row-0  button:nth-child(1)'.format(name)).is_enabled())
+        self.assertFalse(
+            self.wait_css('#vm-{}-order-modal-device-row-0  button:nth-child(2)'.format(name)).is_enabled())
+
+        self.click(self.wait_css('#vm-{}-order-modal-device-row-0-checkbox'.format(name),
+                                 cond=clickable))
+        self.assertFalse(self.wait_css('#vm-{}-order-modal-device-row-0-checkbox'.format(name)).is_selected())
+        self.wait_css('#vm-{}-order-modal-min-message'.format(name),
+                      cond=text_in,
+                      text_="Changes will take effect after shutting down the VM")
+        self.click(self.wait_css('#vm-{}-order-modal-save'.format(name),
+                                 cond=clickable))
+        self.wait_css('#vm-{}-order-modal-window'.format(name),
+                      cond=invisible)
+        self.wait_css('#vm-{}-boot-order'.format(name),
+                      cond=text_in,
+                      text_='disk')
+        self.wait_css('#boot-order-tooltip', cond=invisible)
+
+        self.click(self.wait_css('#vm-{}-off-caret'.format(name),
+                                 cond=clickable))
+        self.click(self.wait_css('#vm-{}-forceOff'.format(name),
+                                 cond=clickable))
+        self.wait_css('#vm-{}-state'.format(name),
+                      cond=text_in,
+                      text_='shut off')
+
+        self.click(self.wait_css('#vm-{}-boot-order'.format(name),
+                                 cond=clickable))
+        self.click(self.wait_css('#vm-{}-order-modal-device-row-0-checkbox'.format(name),
+                                 cond=clickable))
+        self.assertFalse(self.wait_css('#vm-{}-order-modal-device-row-0-checkbox'.format(name)).is_selected())
+        self.wait_css('#vm-{}-order-modal-min-message'.format(name),
+                      cond=invisible)
+        self.click(self.wait_css('#vm-{}-order-modal-save'.format(name),
+                                 cond=clickable))
+        self.wait_css('#vm-{}-order-modal-window'.format(name),
+                      cond=invisible)
+        self.wait_css('#vm-{}-boot-order'.format(name),
+                      cond=text_in,
+                      text_='disk')
+        self.wait_css('#boot-order-tooltip', cond=invisible)
+
+    def testEditVMBootOrder(self):
+        name = 'test_' + MachinesLib.random_string()
+        source_path = '/home/test_' + MachinesLib.random_string()
+        self.machine.execute('sudo touch {}'.format(source_path))
+        self.machine.execute('sudo chmod 777 {}'.format(source_path))
+        self.vm_stop_list.append(name)
+        # Add network for the second boot option when VM running
+        self.create_vm_by_ui(connection='session',
+                             name=name,
+                             source_type='disk_image',
+                             source=source_path,
+                             mem=128,
+                             mem_unit='M',
+                             immediately_start=True)
+        self.click(self.wait_css('#vm-{}-overview'.format(name), cond=clickable))
+        self.click(self.wait_css('#vm-{}-boot-order'.format(name), cond=clickable))
+        self.click(self.wait_css('#vm-{}-order-modal-device-row-1-checkbox'.format(name),
+                                 cond=clickable))
+        self.assertTrue(self.wait_css('#vm-{}-order-modal-device-row-1-checkbox'.format(name),
+                                       cond=clickable).is_selected())
+        self.wait_css('#vm-{}-order-modal-min-message'.format(name),
+                      cond=text_in,
+                      text_="Changes will take effect after shutting down the VM")
+        self.click(self.wait_css('#vm-{}-order-modal-save'.format(name), cond=clickable))
+        self.wait_css('#vm-{}-order-modal-window'.format(name), cond=invisible)
+        self.wait_css('#boot-order-tooltip')
+        ActionChains(self.driver).move_to_element(self.wait_css('#boot-order-tooltip')).perform()
+        self.wait_css('#tip-boot-order',
+                      cond=text_in,
+                      text_="Changes will take effect after shutting down the VM")
+        # Force off the VM
+        self.click(self.wait_css('#vm-{}-off-caret'.format(name),
+                                 cond=clickable))
+        self.click(self.wait_css('#vm-{}-forceOff'.format(name),
+                                 cond=clickable))
+        self.wait_css('#vm-{}-state'.format(name),
+                      cond=text_in,
+                      text_='shut off')
+        self.assertEqual(self.wait_css('#vm-{}-boot-order'.format(name)).text,
+                         'disk,network')
+        # Change network to the first boot option when VM off
+        self.click(self.wait_css('#vm-{}-boot-order'.format(name),
+                                 cond=clickable))
+        self.click(self.wait_css('#vm-{name}-order-modal-device-row-1 #vm-{name}-order-modal-up'.format(name=name),
+                                 cond=clickable))
+        self.wait_css('#vm-{}-order-modal-min-message'.format(name),
+                      cond=invisible)
+        self.wait_css('#vm-{}-order-modal-device-row-0 div.list-group-item-heading'.format(name),
+                      cond=text_in,
+                      text_='network')
+        self.click(self.wait_css('#vm-{}-order-modal-save'.format(name), cond=clickable))
+        self.wait_css('#vm-{}-order-modal-window'.format(name), cond=invisible)
+        self.assertEqual(self.wait_css('#vm-{}-boot-order'.format(name)).text,
+                         'network,disk')
+        self.wait_css('#boot-order-tooltip', cond=invisible)
+        # Change disk to the first boot option when VM off
+        self.click(self.wait_css('#vm-{}-boot-order'.format(name),
+                                 cond=clickable))
+        self.click(self.wait_css('#vm-{name}-order-modal-device-row-0 #vm-{name}-order-modal-down'.format(name=name),
+                                 cond=clickable))
+        self.wait_css('#vm-{}-order-modal-min-message'.format(name), cond=invisible)
+        self.wait_css('#vm-{}-order-modal-device-row-0 div.list-group-item-heading'.format(name),
+                      cond=text_in,
+                      text_='disk')
+        self.click(self.wait_css('#vm-{}-order-modal-save'.format(name), cond=clickable))
+        self.wait_css('#vm-{}-order-modal-window'.format(name), cond=invisible)
+        self.assertEqual(self.wait_css('#vm-{}-boot-order'.format(name)).text,
+                         'disk,network')
+        self.wait_css('#boot-order-tooltip', cond=invisible)

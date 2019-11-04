@@ -270,8 +270,9 @@ class MachinesLib(SeleniumTest):
         self.click(self.wait_css("label[for=os-select] + div > div > div > input"))
         self.send_keys(self.wait_css("label[for=os-select] + div > div > div > input"), operating_system + Keys.ARROW_DOWN + Keys.ENTER)
         # Select the type of 'Storage'
-        self.select_by_value(self.wait_css('#storage-pool-select'),
-                             storage_pool)
+        if source_type != 'disk_image':
+            self.select_by_value(self.wait_css('#storage-pool-select'),
+                                 storage_pool)
         # Set Memory
         if mem_unit == 'M':
             self.select_by_text(self.wait_css('#memory-size-unit-select'),
