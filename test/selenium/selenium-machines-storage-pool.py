@@ -48,7 +48,8 @@ class MachinesStoragePoolTestSuite(MachinesLib):
         self.assertEqual(cmd_total, page_active + page_inactive)
         self.assertEqual(active, page_active)
         self.assertEqual(inactive, page_inactive)
-        self.click(self.wait_css('#app > div > ol > li:nth-child(1) > a'))
+
+        self.click(self.wait_css('#app div a'))
         self.wait_css('#storage-pools-listing', cond=invisible)
         self.wait_css('#virtual-machines-listing')
 
