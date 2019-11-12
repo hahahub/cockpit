@@ -307,7 +307,7 @@ class MachinesBasicTestSuite(MachinesLib):
                          vol_path)
         # Change new disk to the first boot option
         self.click(self.wait_css('#vm-{}-order-modal-device-row-2-checkbox'.format(name),
-                                     cond=clickable))
+                                 cond=clickable))
         self.click(self.wait_css('#vm-{}-order-modal-device-row-2 #vm-{}-order-modal-up'.format(name, name),
                                  cond=clickable))
         self.click(self.wait_css('#vm-{}-order-modal-device-row-1 #vm-{}-order-modal-up'.format(name, name),
@@ -424,7 +424,7 @@ class MachinesBasicTestSuite(MachinesLib):
         self.click(self.wait_css('#vm-{}-order-modal-device-row-1-checkbox'.format(name),
                                  cond=clickable))
         self.assertTrue(self.wait_css('#vm-{}-order-modal-device-row-1-checkbox'.format(name),
-                                       cond=clickable).is_selected())
+                                      cond=clickable).is_selected())
         self.wait_css('#vm-{}-order-modal-min-message'.format(name),
                       cond=text_in,
                       text_="Changes will take effect after shutting down the VM")
