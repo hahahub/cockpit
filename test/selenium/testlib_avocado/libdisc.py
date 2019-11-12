@@ -66,9 +66,10 @@ class Disc:
         self.machine.execute("sudo iscsiadm -m node -T %s --portal %s -u" % (targetname, self.ip))
         self.targetlist.remove(name)
 
-    def clear(self):
-        for foo in self.targetlist:
-            self.deldisc(foo)
+    def clear(self, del_disk=True):
+        if del_disk:
+            for foo in self.targetlist:
+                self.deldisc(foo)
         self.machine.execute("sudo iscsiadm -m discovery -p %s -o delete" % self.ip)
         self.machine.execute("sudo targetcli clearconfig confirm=True")
         self.machine.execute("sudo targetcli saveconfig")
