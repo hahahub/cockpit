@@ -1,5 +1,6 @@
 from testlib_avocado.seleniumlib import clickable, invisible, text_in
 from testlib_avocado.machineslib import MachinesLib
+from testlib_avocado.libdisc import Disc
 
 
 class MachinesDisksTestSuite(MachinesLib):
@@ -147,3 +148,62 @@ class MachinesDisksTestSuite(MachinesLib):
         self.wait_css('#vm-{}-disks-vda-device'.format(name), cond=invisible)
 
         self.assertEqual(self.machine.execute('sudo virsh domblklist ' + name + ' | awk \'NR>=3{if($0!="")print}\' | wc -l').strip(), '1')
+
+    def testAddDiskWithPerformanceOption(self):
+        name = 'test_' + MachinesLib.random_string()
+        self.create_vm(name)
+        self.click(self.wait_css('#vm-{}-disks'.format(name),
+                                 cond=clickable))
+        disk_type_l = ['qcow2', 'raw']
+        disk_preform_l = ['default',
+                          'none',
+                          'writethrough',
+                          'writeback',
+                          'directsync',
+                          'unsafe']
+        # 'a' in UNICODE
+        target_start = 97
+        for dt in disk_type_l:
+            for dp in disk_preform_l:
+                vol = 'vol_' + MachinesLib.random_string()
+                self.click(self.wait_css('#vm-{}-disks-adddisk'.format(name),
+                                         cond=clickable))
+                self.create_disk_by_ui(name,
+                                       vol,
+                                       size_unit='MiB',
+                                       disk_format=dt,
+                                       performance=True,
+                                       cache_mode=dp)
+                self.wait_css('#vm-{}-disks-vd{}-source-volume'.format(name, chr(target_start)),
+                              cond=text_in,
+                              text_=vol)
+                if dp == 'default':
+                    self.wait_css('#vm-{}-disks-vd{}-cache'.format(name, chr(target_start)),
+                                  cond=invisible)
+                else:
+                    self.wait_css('#vm-{}-disks-vd{}-cache'.format(name, chr(target_start)),
+                                  cond=text_in,
+                                  text_=dp)
+                self.assertIn(vol, self.machine.execute('sudo virsh dumpxml {}'.format(name)))
+                target_start += 1
+
+    def testAddDiskFromISCSIPool(self):
+        vm_name = 'test_' + MachinesLib.random_string()
+        pool_name = 'test_nfs_' + MachinesLib.random_string()
+        disc = Disc(self.machine)
+        iqn = disc.addtarget('test' + MachinesLib.random_string(),
+                             '100M')
+
+        self.click(self.wait_css('#card-pf-storage-pools > h2 > button',
+                                 cond=clickable))
+        self.wait_css('#storage-pools-listing')
+        el_prefix = self.create_storage_by_ui(name=pool_name,
+                                              storage_type='iscsi',
+                                              target_path='/dev/disk/by-path',
+                                              host='127.0.0.1',
+                                              source_path=iqn)
+        self.wait_css('#{}-name'.format(el_prefix))
+        self.click(self.wait_css('#app div a', cond=clickable))
+        self.wait_css('#virtual-machines-listing')
+
+        disc.clear()

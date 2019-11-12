@@ -6,6 +6,7 @@ from .timeoutlib import wait
 from .seleniumlib import SeleniumTest, clickable, text_in, invisible
 from .exceptions import SeleniumElementFailure
 from selenium.webdriver.common.keys import Keys
+from testlib_avocado.exceptions import SeleniumElementFailure
 
 
 SPICE_XML = """
@@ -392,6 +393,54 @@ class MachinesLib(SeleniumTest):
         if active:
             self.machine.execute('sudo virsh net-destroy {}'.format(name))
         self.machine.execute('sudo virsh net-undefine {}'.format(name))
+
+    def create_disk_by_ui(self,
+                          vm_name,
+                          disk_name,
+                          mode='createnew',
+                          volume=None,
+                          pool='default',
+                          size='1',
+                          size_unit='MiB',
+                          disk_format='qcow2',
+                          persistence=False,
+                          performance=False,
+                          cache_mode='default'):
+        self.wait_css('#vm-{}-disks-adddisk-dialog-modal-window'.format(vm_name))
+        self.click(self.wait_css('#vm-{}-disks-adddisk-{}'.format(vm_name, mode),
+                                 cond=clickable))
+        self.select_by_value(self.wait_css('#vm-{}-disks-adddisk-new-select-pool'.format(vm_name),
+                                           cond=clickable),
+                             pool)
+        if mode == 'useexisting':
+            if volume:
+                self.select_by_value(self.wait_css('#vm-{}-disks-adddisk-existing-select-volume'.format(vm_name),
+                                                   cond=clickable),
+                                     volume)
+            else:
+                raise SeleniumElementFailure('need input the volume name')
+        else:
+            self.send_keys(self.wait_css('#vm-{}-disks-adddisk-new-name'.format(vm_name)),
+                           disk_name)
+            self.send_keys(self.wait_css('#vm-{}-disks-adddisk-new-size'.format(vm_name)),
+                           size)
+            self.select_by_value(self.wait_css('#vm-{}-disks-adddisk-new-unit'.format(vm_name),
+                                               cond=clickable),
+                                 size_unit)
+            self.select_by_value(self.wait_css('#vm-{}-disks-adddisk-new-format'.format(vm_name),
+                                               cond=clickable),
+                                 disk_format)
+        self.check_box(self.wait_css('#vm-{}-disks-adddisk-new-permanent'.format(vm_name),
+                                     cond=clickable),
+                       persistence)
+        if performance:
+            self.click(self.wait_css('#expand-collapse-button > div > button',
+                                     cond=clickable))
+            self.select_by_value(self.wait_css('#cache-mode',
+                                               cond=clickable),
+                                 cache_mode)
+        self.click(self.wait_css('#vm-{}-disks-adddisk-dialog-add'.format(vm_name),
+                                 cond=clickable))
 
     def non_root_user_operations(self,
                                  user_group=None,
