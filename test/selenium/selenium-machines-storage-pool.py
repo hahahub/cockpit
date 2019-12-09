@@ -1,6 +1,7 @@
 import os
 import re
 from avocado import skipIf
+from testlib_avocado.timeoutlib import wait
 from testlib_avocado.libdisc import Disc
 from testlib_avocado.machineslib import MachinesLib
 from testlib_avocado.seleniumlib import clickable, invisible, text_in
@@ -234,7 +235,10 @@ class MachinesStoragePoolTestSuite(MachinesLib):
                                  cond=clickable))
         self.click(self.wait_css(
             '#delete-{}'.format(el_id_prefix), cond=clickable))
+        # make sure the checkbox can be checked
+        wait(lambda: not self.wait_css('#storage-pool-delete-volumes').is_selected())
         self.check_box(self.wait_css('#storage-pool-delete-volumes'))
+        wait(lambda: self.wait_css('#storage-pool-delete-volumes').is_selected())
         self.click(
             self.wait_xpath('/html/body/div[2]/div[2]/div/div/div[3]/button[2]',
                             cond=clickable))
@@ -263,7 +267,8 @@ class MachinesStoragePoolTestSuite(MachinesLib):
         path = '/home/' + name
         self.machine.execute('sudo mkdir -p {}'.format(path))
 
-        self.click(self.wait_text('Storage Pools', cond=clickable))
+        self.click(self.wait_css('#card-pf-storage-pools > h2 > button',
+                                 cond=clickable))
         el_prefix_id = self.create_storage_by_ui(name=name,
                                                  target_path=path,
                                                  host=os.environ.get('NFS'),
@@ -318,7 +323,8 @@ class MachinesStoragePoolTestSuite(MachinesLib):
             size='100M')
 
         # Delete active ISCSI Storage Pool
-        self.click(self.wait_text('Storage Pools', cond=clickable))
+        self.click(self.wait_css('#card-pf-storage-pools > h2 > button',
+                             cond=clickable))
         el_prefix_id = self.create_storage_by_ui(name=pool_name,
                                                  storage_type='iscsi',
                                                  target_path='/dev/disk/by-path',
@@ -374,10 +380,10 @@ class MachinesStoragePoolTestSuite(MachinesLib):
         disc.createparttable(device_suffix)
 
         vol_name = device.split('/')[-1] + '1'
-        print(vol_name)
         pdd_name = 'test_pdd_deletion_' + MachinesLib.random_string()
 
-        self.click(self.wait_text('Storage Pools', cond=clickable))
+        self.click(self.wait_css('#card-pf-storage-pools button',
+                                 cond=clickable))
         el_prefix_id = self.create_storage_by_ui(name=pdd_name,
                                                  storage_type='disk',
                                                  target_path='/media',
@@ -391,7 +397,7 @@ class MachinesStoragePoolTestSuite(MachinesLib):
         self.click(self.wait_css('body > div:nth-child(2) > div.fade.in.modal > div > div > div.modal-footer > button.btn.btn-danger',
                                  cond=clickable))
         self.wait_css('#{}-name'.format(el_prefix_id), cond=invisible)
-        self.assertIn(vol_name, self.machine.execute('lsblk'))
+        wait(lambda:vol_name in self.machine.execute('lsblk'))
 
         el_prefix_id = self.create_storage_by_ui(name=pdd_name,
                                                  storage_type='disk',
@@ -407,7 +413,7 @@ class MachinesStoragePoolTestSuite(MachinesLib):
         self.click(self.wait_css('body > div:nth-child(2) > div.fade.in.modal > div > div > div.modal-footer > button.btn.btn-danger',
                                  cond=clickable))
         self.wait_css('#{}-name'.format(el_prefix_id), cond=invisible)
-        self.assertIn(vol_name, self.machine.execute('lsblk'))
+        wait(lambda:vol_name in self.machine.execute('lsblk'))
 
         el_prefix_id = self.create_storage_by_ui(name=pdd_name,
                                                  storage_type='disk',
@@ -416,11 +422,15 @@ class MachinesStoragePoolTestSuite(MachinesLib):
                                                  parted='dos')
         self.click(self.wait_css('#{}-name'.format(el_prefix_id), cond=clickable))
         self.click(self.wait_css('#delete-{}'.format(el_prefix_id), cond=clickable))
+        # make sure the checkbox can be checked
+        wait(lambda: not self.wait_css('#storage-pool-delete-volumes').is_selected())
         self.check_box(self.wait_css('#storage-pool-delete-volumes', cond=clickable))
+        wait(lambda: self.wait_css('#storage-pool-delete-volumes').is_selected())
+
         self.click(self.wait_css('body > div:nth-child(2) > div.fade.in.modal > div > div > div.modal-footer > button.btn.btn-danger',
                                  cond=clickable))
         self.wait_css('#{}-name'.format(el_prefix_id), cond=invisible)
-        self.assertNotIn(vol_name, self.machine.execute('lsblk'))
+        wait(lambda: vol_name not in self.machine.execute('lsblk'))
 
         disc.clear()
 
@@ -433,7 +443,8 @@ class MachinesStoragePoolTestSuite(MachinesLib):
         self.machine.execute('sudo virsh pool-create-as {} {} --target {}'.format(pool_name, 'dir', pool_path))
         self.machine.execute('sudo virsh vol-create-as {} {} {}'.format(pool_name, vol_name, '10M'))
         # Refresh to reload the pool information
-        self.click(self.wait_text('Storage Pools', cond=clickable))
+        self.click(self.wait_css('#card-pf-storage-pools > h2 > button',
+                                 cond=clickable))
         self.refresh_machines_page()
         # Check information about the pool and volume which is created above
         self.click(self.wait_css('#pool-{}-system-name'.format(pool_name), cond=clickable))
@@ -441,7 +452,7 @@ class MachinesStoragePoolTestSuite(MachinesLib):
         self.wait_css('#pool-{}-system-volume-{}-name'.format(pool_name, vol_name), cond=clickable)
         # Delet the volume
         self.wait_css('#storage-volumes-delete', cond=invisible)
-        self.check_box(self.wait_css('tr[data-row-id="pool-{}-system-volume-{}"] > td:nth-child(2) > input'.format(pool_name, vol_name),
+        self.check_box(self.wait_css('tr[data-row-id="pool-{}-system"] ~ tr input[name="checkrow0"]'.format(pool_name),
                                      cond=clickable))
         self.wait_css('#storage-volumes-delete',
                       cond=text_in,
@@ -457,7 +468,8 @@ class MachinesStoragePoolTestSuite(MachinesLib):
 
         self.create_vm(name)
 
-        self.click(self.wait_text('Storage Pools', cond=clickable))
+        self.click(self.wait_css('#card-pf-storage-pools > h2 > button',
+                                 cond=clickable))
         self.click(self.wait_css('#pool-default-system-name', cond=clickable))
         self.click(self.wait_css('#pool-default-system-storage-volumes', cond=clickable))
         self.wait_css('#pool-default-system-volume-cirros\.qcow2-usedby', cond=text_in, text_=name)

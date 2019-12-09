@@ -265,11 +265,8 @@ class MachinesLib(SeleniumTest):
                 if re.match('^(.*)' + source + '(.*)$', sl.text):
                     self.select_by_text(item, sl.text)
                     break
-        # Input 'Operating System'
-        # click + clear + send_keys can make this field works well
-        # , or the string can not be send to the input
-        self.click(self.wait_css("label[for=os-select] + div > div > div > input"))
-        self.send_keys(self.wait_css("label[for=os-select] + div > div > div > input"), operating_system + Keys.ARROW_DOWN + Keys.ENTER)
+        self.send_keys(self.wait_css("label[for=os-select] + div > div > div > input", cond=clickable), operating_system)
+        self.send_keys(self.wait_css("label[for=os-select] + div > div > div > input", cond=clickable), Keys.ARROW_DOWN + Keys.ENTER, clear=False)
         # Select the type of 'Storage'
         if source_type != 'disk_image':
             self.select_by_value(self.wait_css('#storage-pool-select'),
@@ -389,10 +386,13 @@ class MachinesLib(SeleniumTest):
 
         self.machine.execute(cmd)
 
-    def delete_network_with_cmd(self, name, active):
-        if active:
-            self.machine.execute('sudo virsh net-destroy {}'.format(name))
-        self.machine.execute('sudo virsh net-undefine {}'.format(name))
+    def delete_network_with_cmd(self, name, persistent=True):
+        if name not in self.machine.execute('sudo virsh net-list --all'):
+            return
+        cmd = 'sudo virsh net-destroy {}'.format(name)
+        if persistent:
+            cmd += ' && sudo virsh net-undefine {}'.format(name)
+        self.machine.execute(cmd)
 
     def create_disk_by_ui(self,
                           vm_name,
