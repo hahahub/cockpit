@@ -164,6 +164,7 @@ def wait(func, msg=None, delay=1, tries=60):
 
     t = 0
     while t < tries:
+        time.sleep(delay)
         try:
             val = func()
             if val:
@@ -174,7 +175,6 @@ def wait(func, msg=None, delay=1, tries=60):
             else:
                 pass
         t = t + 1
-        time.sleep(delay)
     raise TimeoutError(msg or "Condition did not become true.")
 
 

@@ -162,5 +162,5 @@ class MachinesBasicTestSuite(MachinesLib):
         self.wait_css('#vm-{}-state'.format(name),
                       cond=text_in,
                       text_='running',
-                      overridetry=120)
+                      overridetry=300)
         self.wait_css('div.toolbar-pf-results canvas')

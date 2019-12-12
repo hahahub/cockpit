@@ -5,6 +5,7 @@ from time import sleep
 from .timeoutlib import wait
 from .seleniumlib import SeleniumTest, clickable, text_in, invisible
 from .exceptions import SeleniumElementFailure
+from selenium.webdriver.support.ui import Select
 
 
 SPICE_XML = """
@@ -246,7 +247,11 @@ class MachinesLib(SeleniumTest):
                     break
 
         if os_vendor:
+            wait(lambda: 'Unspecified' == Select(self.wait_css('#vendor-select')).first_selected_option.text,
+                 delay=5)
             self.select_by_value(self.wait_css('#vendor-select'), os_vendor)
+            wait(lambda: 'CentOS' == Select(self.wait_css('#vendor-select')).first_selected_option.text,
+                 delay=5)
         if operating_system:
             self.select_by_value(self.wait_css('#system-select'), operating_system)
 
