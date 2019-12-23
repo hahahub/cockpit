@@ -324,7 +324,7 @@ class MachinesStoragePoolTestSuite(MachinesLib):
 
         # Delete active ISCSI Storage Pool
         self.click(self.wait_css('#card-pf-storage-pools > h2 > button',
-                             cond=clickable))
+                                 cond=clickable))
         el_prefix_id = self.create_storage_by_ui(name=pool_name,
                                                  storage_type='iscsi',
                                                  target_path='/dev/disk/by-path',
@@ -397,7 +397,7 @@ class MachinesStoragePoolTestSuite(MachinesLib):
         self.click(self.wait_css('body > div:nth-child(2) > div.fade.in.modal > div > div > div.modal-footer > button.btn.btn-danger',
                                  cond=clickable))
         self.wait_css('#{}-name'.format(el_prefix_id), cond=invisible)
-        wait(lambda:vol_name in self.machine.execute('lsblk'))
+        wait(lambda: vol_name in self.machine.execute('lsblk'))
 
         el_prefix_id = self.create_storage_by_ui(name=pdd_name,
                                                  storage_type='disk',
@@ -413,7 +413,7 @@ class MachinesStoragePoolTestSuite(MachinesLib):
         self.click(self.wait_css('body > div:nth-child(2) > div.fade.in.modal > div > div > div.modal-footer > button.btn.btn-danger',
                                  cond=clickable))
         self.wait_css('#{}-name'.format(el_prefix_id), cond=invisible)
-        wait(lambda:vol_name in self.machine.execute('lsblk'))
+        wait(lambda: vol_name in self.machine.execute('lsblk'))
 
         el_prefix_id = self.create_storage_by_ui(name=pdd_name,
                                                  storage_type='disk',

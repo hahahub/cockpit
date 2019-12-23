@@ -151,6 +151,7 @@ class MachinesBasicTestSuite(MachinesLib):
                              name=name,
                              source_type='url',
                              source=os.environ.get('URLSOURCE'),
+                             operating_system=None,
                              immediately_start=True)
 
         self.wait_css('#vm-{}-row'.format(name))
@@ -183,7 +184,7 @@ class MachinesBasicTestSuite(MachinesLib):
         self.send_keys(self.wait_css('label[for=os-select] + div > div > div > input'),
                        'SUSE CaaS Platform 3.0')
         self.send_keys(self.wait_css('label[for=os-select] + div > div > div > input'),
-                                     Keys.ARROW_DOWN + Keys.ENTER)
+                       Keys.ARROW_DOWN + Keys.ENTER)
         ActionChains(self.driver).move_to_element(self.wait_css('#memory-size-slider > div.slider-handle.min-slider-handle.round')).perform()
         self.assertEqual(self.wait_css('#memory-size-slider .tooltip.tooltip-main.top .tooltip-inner').text.strip(),
                          '8')
@@ -197,9 +198,9 @@ class MachinesBasicTestSuite(MachinesLib):
         self.send_keys(self.wait_css('label[for=os-select] + div > div > div > input'),
                        'Pop!_OS 18.04')
         self.send_keys(self.wait_css('label[for=os-select] + div > div > div > input'),
-                                     Keys.ARROW_DOWN + Keys.ENTER)
-        # can not use the same ActionChains object as there will be an error raised which is 
-        # 'stale element reference: element is not attached to the page document'.Although the 
+                       Keys.ARROW_DOWN + Keys.ENTER)
+        # can not use the same ActionChains object as there will be an error raised which is
+        # 'stale element reference: element is not attached to the page document'.Although the
         # code has already finished
         ActionChains(self.driver).move_to_element(self.wait_css('#memory-size-slider > div.slider-handle.min-slider-handle.round')).perform()
         self.assertEqual(self.wait_css('#memory-size-slider .tooltip.tooltip-main.top .tooltip-inner').text.strip(),
@@ -245,10 +246,10 @@ class MachinesBasicTestSuite(MachinesLib):
 
     def testCheckHostAvailableSpace(self):
         if 'default' not in self.machine.execute('virsh pool-list --all'):
-            self.machine.execute('virsh pool-define-as default '
-                                 + '--type dir '
-                                 + '--target ~/.local/share/libvirt/images '
-                                 + '&& virsh pool-start default')
+            self.machine.execute('virsh pool-define-as default ' +
+                                 '--type dir ' +
+                                 '--target ~/.local/share/libvirt/images ' +
+                                 '&& virsh pool-start default')
         pool_default = int(float(self.machine.execute(
             'virsh pool-info --bytes default | grep Available').strip().split(" ")[-1]) / 1024 / 1024 / 1024)
 

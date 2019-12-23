@@ -110,7 +110,7 @@ class MachinesNetworksTestSuite(MachinesLib):
     def testTransientNetworkDeletion(self):
         net_1 = 'test_net_deletion_' + MachinesLib.random_string()
         self.net_delete_list[net_1] = False
-        
+
         self.click(self.wait_css('#card-pf-networks > h2 > button',
                                  cond=clickable))
         self.create_network(net_1, persistent=False)

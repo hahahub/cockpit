@@ -265,8 +265,9 @@ class MachinesLib(SeleniumTest):
                 if re.match('^(.*)' + source + '(.*)$', sl.text):
                     self.select_by_text(item, sl.text)
                     break
-        self.send_keys(self.wait_css("label[for=os-select] + div > div > div > input", cond=clickable), operating_system)
-        self.send_keys(self.wait_css("label[for=os-select] + div > div > div > input", cond=clickable), Keys.ARROW_DOWN + Keys.ENTER, clear=False)
+        if operating_system:
+            self.send_keys(self.wait_css("label[for=os-select] + div > div > div > input", cond=clickable), operating_system)
+            self.send_keys(self.wait_css("label[for=os-select] + div > div > div > input", cond=clickable), Keys.ARROW_DOWN + Keys.ENTER, clear=False)
         # Select the type of 'Storage'
         if source_type != 'disk_image':
             self.select_by_value(self.wait_css('#storage-pool-select'),
@@ -297,7 +298,8 @@ class MachinesLib(SeleniumTest):
                            ctrla=True)
         # Check 'Immediately Start VM'
         self.check_box(self.wait_css('#start-vm'), immediately_start)
-
+        # make sure the OS is be detected or input
+        wait(lambda: self.wait_css('label[for=os-select] + div > div > div > input', cond=clickable).get_attribute('value') != "")
         self.click(self.wait_css('#create-vm-dialog .modal-footer .btn.btn-primary', cond=clickable))
         # Some checks after creation
         self.wait_dialog_disappear()
