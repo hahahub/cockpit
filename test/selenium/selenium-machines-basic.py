@@ -181,10 +181,11 @@ class MachinesBasicTestSuite(MachinesLib):
         self.click(self.wait_css('#create-new-vm', cond=clickable))
         self.select_by_value(self.wait_css('#source-type', cond=clickable),
                              'file')
-        self.send_keys(self.wait_css('label[for=os-select] + div > div > div > input'),
+        self.send_keys(self.wait_css('label[for=os-select] + div > div > div > input', cond=clickable),
                        'SUSE CaaS Platform 3.0')
-        self.send_keys(self.wait_css('label[for=os-select] + div > div > div > input'),
-                       Keys.ARROW_DOWN + Keys.ENTER)
+        self.send_keys(self.wait_css('label[for=os-select] + div > div > div > input', cond=clickable),
+                       Keys.ARROW_DOWN + Keys.ENTER,
+                       clear=False)
         ActionChains(self.driver).move_to_element(self.wait_css('#memory-size-slider > div.slider-handle.min-slider-handle.round')).perform()
         self.assertEqual(self.wait_css('#memory-size-slider .tooltip.tooltip-main.top .tooltip-inner').text.strip(),
                          '8')
@@ -195,10 +196,11 @@ class MachinesBasicTestSuite(MachinesLib):
         self.click(self.wait_css('#create-new-vm', cond=clickable))
         self.select_by_value(self.wait_css('#source-type', cond=clickable),
                              'file')
-        self.send_keys(self.wait_css('label[for=os-select] + div > div > div > input'),
+        self.send_keys(self.wait_css('label[for=os-select] + div > div > div > input', cond=clickable),
                        'Pop!_OS 18.04')
-        self.send_keys(self.wait_css('label[for=os-select] + div > div > div > input'),
-                       Keys.ARROW_DOWN + Keys.ENTER)
+        self.send_keys(self.wait_css('label[for=os-select] + div > div > div > input', cond=clickable),
+                       Keys.ARROW_DOWN + Keys.ENTER,
+                       clear=False)
         # can not use the same ActionChains object as there will be an error raised which is
         # 'stale element reference: element is not attached to the page document'.Although the
         # code has already finished
@@ -261,19 +263,15 @@ class MachinesBasicTestSuite(MachinesLib):
     def testSetAutostartForRunnigVM(self):
         name = 'test_' + MachinesLib.random_string()
         self.create_vm(name)
-        wait(lambda: not self.wait_css('#vm-{}-autostart-checkbox'.format(name)).is_selected())
         # check autostart of the VM
         self.check_box(self.wait_css('#vm-{}-autostart-checkbox'.format(name),
                                      cond=clickable))
-        wait(lambda: self.wait_css('#vm-{}-autostart-checkbox'.format(name)).is_selected())
         cmd_res = self.machine.execute('sudo virsh dominfo {} | grep Autostart'.format(name)).strip().split(" ")[-1]
         self.assertEqual(cmd_res, 'enable')
         # uncheck autostart of the VM
-        wait(lambda: self.wait_css('#vm-{}-autostart-checkbox'.format(name)).is_selected())
         self.check_box(self.wait_css('#vm-{}-autostart-checkbox'.format(name),
                                      cond=clickable),
                        checked=False)
-        wait(lambda: not self.wait_css('#vm-{}-autostart-checkbox'.format(name)).is_selected())
         cmd_res = self.machine.execute('sudo virsh dominfo {} | grep Autostart'.format(name)).strip().split(" ")[-1]
         self.assertEqual(cmd_res, 'disable')
 

@@ -251,11 +251,16 @@ class SeleniumTest(Test):
             self.execute_script('var ev = new Event("change", { bubbles: true, cancelable: false }); arguments[0].dispatchEvent(ev);', element)
             self.execute_script('var ev = new Event("change", { bubbles: true, cancelable: false }); arguments[0].dispatchEvent(ev);', element)
 
-    def check_box(self, element, checked=True):
+    def check_box(self, element, checked=True, Retry=None):
         self._selenium_logging("check box select", element)
         try:
-            if element.is_selected() != checked:
-                element.click()
+            for _ in range(0, Retry or self.default_try):
+                # delayed judgment
+                time.sleep(self.RETRY_LOOP_SLEEP)
+                if element.is_selected() != checked:
+                    element.click()
+                    continue
+                break
         except WebDriverException as e:
             self.take_screenshot(fatal=False)
             raise SeleniumElementFailure('Unable to CHECKBOX element ({})'.format(e))

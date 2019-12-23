@@ -229,16 +229,14 @@ class MachinesStoragePoolTestSuite(MachinesLib):
         self.machine.execute('sudo test -f {}/{}'.format(path, vol_name))
 
         # Re-create the storage pool,
-        # then delete it without deleting volumes in it
+        # then delete it with deleting volumes in it
         el_id_prefix = self.create_storage_by_ui(name=name, target_path=path)
         self.click(self.wait_css('#{}-name'.format(el_id_prefix),
                                  cond=clickable))
         self.click(self.wait_css(
             '#delete-{}'.format(el_id_prefix), cond=clickable))
         # make sure the checkbox can be checked
-        wait(lambda: not self.wait_css('#storage-pool-delete-volumes').is_selected())
         self.check_box(self.wait_css('#storage-pool-delete-volumes'))
-        wait(lambda: self.wait_css('#storage-pool-delete-volumes').is_selected())
         self.click(
             self.wait_xpath('/html/body/div[2]/div[2]/div/div/div[3]/button[2]',
                             cond=clickable))
