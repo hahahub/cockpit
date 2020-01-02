@@ -141,7 +141,7 @@ class MachinesBasicTestSuite(MachinesLib):
                              name=name,
                              source_type='url',
                              source=os.environ.get('URLSOURCE'),
-                             operating_system=None,
+                             operating_system='Fedora (unknown)',
                              immediately_start=True)
 
         self.wait_css('#vm-{}-row'.format(name))
