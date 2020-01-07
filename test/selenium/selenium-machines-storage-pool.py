@@ -235,7 +235,6 @@ class MachinesStoragePoolTestSuite(MachinesLib):
                                  cond=clickable))
         self.click(self.wait_css(
             '#delete-{}'.format(el_id_prefix), cond=clickable))
-        # make sure the checkbox can be checked
         self.check_box(self.wait_css('#storage-pool-delete-volumes'))
         self.click(
             self.wait_xpath('/html/body/div[2]/div[2]/div/div/div[3]/button[2]',
@@ -296,10 +295,7 @@ class MachinesStoragePoolTestSuite(MachinesLib):
 
         self.click(self.wait_css('#{}-name'.format(el_prefix_id)))
         self.click(self.wait_css('#delete-{}'.format(el_prefix_id), cond=clickable))
-        # checkbox needs twice click
-        self.send_keys(self.wait_css('#storage-pool-delete-volumes'),
-                       Keys.SPACE,
-                       clear=False)
+        self.check_box(self.wait_css('#storage-pool-delete-volumes'))
         self.click(self.wait_css(
             'body > div:nth-child(2) > div.fade.in.modal > div > div > div.modal-footer > button.btn.btn-danger',
             cond=clickable))

@@ -243,7 +243,15 @@ class SeleniumTest(Test):
                 element.clear()
             if ctrla:
                 element.send_keys(Keys.CONTROL + 'a')
-            element.send_keys(text)
+            for i in range(self.default_try):
+                try:
+                    time.sleep(self.RETRY_LOOP_SLEEP)
+                    element.send_keys(text)
+                    self.assertIsNotNone(element.get_attribute('value'))
+                    break
+                except AssertionError:
+                    self.log.info('send_keys failed, retry {}'.format(i))
+                raise AssertionError('send_keys failed')
         except WebDriverException as e:
             self.take_screenshot(fatal=False)
             raise SeleniumElementFailure('Unable to SEND_KEYS to element ({})'.format(e))
