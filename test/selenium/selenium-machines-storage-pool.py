@@ -340,7 +340,7 @@ class MachinesStoragePoolTestSuite(MachinesLib):
 
         cmd_res = self.machine.execute(
             'sudo virsh pool-list --all | awk \'NR>=3{if($0!="")print $1}\'')
-        self.assertTrue(pool_name not in cmd_res)
+        wait(lambda: pool_name not in cmd_res)
 
         # Delete inactive ISCSI Storage Pool
         el_prefix_id = self.create_storage_by_ui(name=pool_name,
@@ -366,7 +366,7 @@ class MachinesStoragePoolTestSuite(MachinesLib):
 
         cmd_res = self.machine.execute(
             'sudo virsh pool-list --all | awk \'NR>=3{if($0!="")print $1}\'')
-        self.assertTrue(pool_name not in cmd_res)
+        wait(lambda: pool_name not in cmd_res)
 
         disc.clear(del_disk=False)
 
