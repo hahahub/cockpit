@@ -381,9 +381,8 @@ class MachinesLib(SeleniumTest):
             log_file = vm_args['logfile']
 
             # After re-login, extend the vm-row is needed
-            self.click(self.wait_css(
-                "tbody tr[data-row-id='vm-{}'] th".format(vm_name),
-                cond=clickable))
+            self.click(self.wait_css("#vm-{}-row".format(vm_name),
+                       cond=clickable))
 
             self.check_vm_info(vm_name)
             self.check_vm_pause_and_resume(vm_name)
