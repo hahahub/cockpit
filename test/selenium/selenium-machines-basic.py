@@ -154,10 +154,6 @@ class MachinesBasicTestSuite(MachinesLib):
                              operating_system=None,
                              immediately_start=True)
 
-        self.wait_css('#vm-{}-row'.format(name))
-        self.wait_css('#vm-{}-state'.format(name),
-                      cond=text_in,
-                      text_='creating VM installation')
         self.wait_css('#vm-{}-state'.format(name),
                       cond=text_in,
                       text_='running',

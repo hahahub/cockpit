@@ -276,9 +276,12 @@ class MachinesLib(SeleniumTest):
         if mem_unit == 'M':
             self.select_by_text(self.wait_css('#memory-size-unit-select'),
                                 'MiB')
-        self.send_keys(self.wait_css('#memory-size'),
+        # If pass the 'self.wait_css' to the 'self.send_keys' directly,
+        # sometimes, the element will is just located but not attached,
+        # so there will be an error there, use a local variable to try to slow this process
+        memory_size = self.wait_css('#memory-size')
+        self.send_keys(memory_size,
                        mem,
-                       clear=False,
                        ctrla=True)
         # Select volume if the type of storage_pool is not 'NewVolume' and 'NoStorage'
         # and volume_name is not None
