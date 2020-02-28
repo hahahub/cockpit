@@ -188,7 +188,6 @@ class MachinesDisksTestSuite(MachinesLib):
                 target_start += 1
 
     def testAddDiskFromISCSIPool(self):
-        vm_name = 'test_' + MachinesLib.random_string()
         pool_name = 'test_nfs_' + MachinesLib.random_string()
         disc = Disc(self.machine)
         iqn = disc.addtarget('test' + MachinesLib.random_string(),

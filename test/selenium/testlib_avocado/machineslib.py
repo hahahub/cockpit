@@ -4,7 +4,6 @@ import secrets
 from time import sleep
 from .timeoutlib import wait
 from .seleniumlib import SeleniumTest, clickable, text_in, invisible
-from .exceptions import SeleniumElementFailure
 from selenium.webdriver.common.keys import Keys
 from testlib_avocado.exceptions import SeleniumElementFailure
 
