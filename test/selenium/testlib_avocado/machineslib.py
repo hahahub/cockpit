@@ -279,8 +279,7 @@ class MachinesLib(SeleniumTest):
         # If pass the 'self.wait_css' to the 'self.send_keys' directly,
         # sometimes, the element will is just located but not attached,
         # so there will be an error there, use a local variable to try to slow this process
-        memory_size = self.wait_css('#memory-size')
-        self.send_keys(memory_size,
+        self.send_keys(self.wait_css('#memory-size'),
                        mem,
                        ctrla=True)
         # Select volume if the type of storage_pool is not 'NewVolume' and 'NoStorage'
@@ -435,7 +434,7 @@ class MachinesLib(SeleniumTest):
             self.select_by_value(self.wait_css('#vm-{}-disks-adddisk-new-format'.format(vm_name),
                                                cond=clickable),
                                  disk_format)
-        self.check_box(self.wait_css('#vm-{}-disks-adddisk-new-permanent'.format(vm_name),
+        self.check_box(self.wait_css('#vm-{}-disks-adddisk-permanent'.format(vm_name),
                                      cond=clickable),
                        persistence)
         if performance:
