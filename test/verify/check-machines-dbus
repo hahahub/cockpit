@@ -1845,6 +1845,17 @@ class TestMachinesDBus(machineslib.TestMachines):
             source={"source_path": "vol_grp1"},
         ).execute()
 
+        # XFAIL: Check timeout error
+        StoragePoolCreateDialog(
+            self,
+            name="timeout_pool",
+            pool_type="netfs",
+            target=p2 + "/",
+            source={"host": "10.0.0.0", "source_path": mnt_exports},
+            xfail=True,
+            xfail_error=""
+        ).execute()
+
     def testStorageVolumesCreate(self):
         b = self.browser
         m = self.machine
