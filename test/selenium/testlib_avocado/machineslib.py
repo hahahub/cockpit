@@ -301,7 +301,7 @@ class MachinesLib(SeleniumTest):
         self.check_box(self.wait_css('#start-vm'), immediately_start)
         # make sure the OS is be detected or input
         wait(lambda: self.wait_css('label[for=os-select] + div > div > div > input', cond=clickable).get_attribute('value') != "")
-        self.click(self.wait_css('#create-vm-dialog .modal-footer .btn.btn-primary', cond=clickable))
+        self.click(self.wait_css('#create-vm-dialog .modal-footer .pf-c-button.pf-m-primary', cond=clickable))
         # Some checks after creation
         self.wait_dialog_disappear()
         self.wait_css('#create-vm-dialog', cond=invisible)
