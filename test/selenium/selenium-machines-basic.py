@@ -356,7 +356,7 @@ class MachinesBasicTestSuite(MachinesLib):
 
         self.click(self.wait_css('#vm-{}-boot-order'.format(name),
                                  cond=clickable))
-        self.click(self.wait_css('#vm-{}-order-modal-device-row-1 button.btn.btn-default'.format(name),
+        self.click(self.wait_css('#vm-{}-order-modal-device-row-1 button.pf-c-button.pf-m-primary'.format(name),
                                  cond=clickable))
         self.assertEqual(self.wait_css('#vm-{}-order-modal-device-row-0  div.list-group-item-heading'.format(name)).text,
                          'network')
