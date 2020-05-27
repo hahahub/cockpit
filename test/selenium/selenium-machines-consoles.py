@@ -24,8 +24,8 @@ class MachinesConsolesTestSuite(MachinesLib):
 
         # Test ctrl+alt+del
         self.wait_vm_complete_start(args)
-        self.click(self.wait_css('#console-send-shortcut', cond=clickable))
-        self.click(self.wait_css('#console-send-shortcut + ul li:nth-of-type(1) > a', cond=clickable))
+        self.click(self.wait_css('#{}-{}-vnc-sendkey button.pf-c-dropdown__toggle'.format(name, 'system'), cond=clickable))
+        self.click(self.wait_css('#ctrl-alt-Delete > a', cond=clickable))
         wait(lambda: "reboot: machine restart" in self.machine.execute(
             "sudo cat {0}".format(args.get('logfile'))), delay=3)
 
