@@ -361,7 +361,7 @@ class MachinesLib(SeleniumTest):
 
         self.check_box(self.wait_css('#storage-pool-dialog-autostart', cond=clickable), start_up)
 
-        self.click(self.wait_css('#create-storage-pool-dialog button.btn.btn-primary', cond=clickable))
+        self.click(self.wait_css('#create-storage-pool-dialog button.pf-c-button.pf-m-primary', cond=clickable))
 
         self.wait_dialog_disappear()
         el_id_prefix = 'pool-{}-{}'.format(name, connection)
