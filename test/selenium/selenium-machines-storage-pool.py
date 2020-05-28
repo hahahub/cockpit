@@ -281,7 +281,7 @@ class MachinesStoragePoolTestSuite(MachinesLib):
         self.click(self.wait_css('#{}-name'.format(el_prefix_id)))
         self.click(self.wait_css('#delete-{}'.format(el_prefix_id), cond=clickable))
         self.click(self.wait_css(
-            'body > div:nth-child(2) > div.fade.in.modal > div > div > div.modal-footer > button.btn.btn-danger',
+            'body > div:nth-child(2) > div.fade.in.modal > div > div > div.modal-footer > button.pf-c-button.pf-m-danger',
             cond=clickable))
         self.wait_css('#{}-name'.format(el_prefix_id), cond=invisible)
 
@@ -301,7 +301,7 @@ class MachinesStoragePoolTestSuite(MachinesLib):
                        Keys.SPACE,
                        clear=False)
         self.click(self.wait_css(
-            'body > div:nth-child(2) > div.fade.in.modal > div > div > div.modal-footer > button.btn.btn-danger',
+            'body > div:nth-child(2) > div.fade.in.modal > div > div > div.modal-footer > button.pf-c-button.pf-m-danger',
             cond=clickable))
         self.wait_css('#{}-name'.format(el_prefix_id), cond=invisible)
 
@@ -334,7 +334,7 @@ class MachinesStoragePoolTestSuite(MachinesLib):
         self.click(
             self.wait_css('#delete-{}'.format(el_prefix_id), cond=clickable))
         self.click(
-            self.wait_css('body > div:nth-child(2) > div.fade.in.modal > div > div > div.modal-footer > button.btn.btn-danger',
+            self.wait_css('body > div:nth-child(2) > div.fade.in.modal > div > div > div.modal-footer > button.pf-c-button.pf-m-danger',
                           cond=clickable))
         self.wait_css('#{}-name'.format(el_prefix_id), cond=invisible)
 
@@ -360,7 +360,7 @@ class MachinesStoragePoolTestSuite(MachinesLib):
         self.click(
             self.wait_css('#delete-{}'.format(el_prefix_id), cond=clickable))
         self.click(
-            self.wait_css('body > div:nth-child(2) > div.fade.in.modal > div > div > div.modal-footer > button.btn.btn-danger',
+            self.wait_css('body > div:nth-child(2) > div.fade.in.modal > div > div > div.modal-footer > button.pf-c-button.pf-m-danger',
                           cond=clickable))
         self.wait_css('#{}-name'.format(el_prefix_id), cond=invisible)
 
@@ -392,7 +392,7 @@ class MachinesStoragePoolTestSuite(MachinesLib):
 
         self.click(self.wait_css('#delete-{}'.format(el_prefix_id),
                                  cond=clickable))
-        self.click(self.wait_css('body > div:nth-child(2) > div.fade.in.modal > div > div > div.modal-footer > button.btn.btn-danger',
+        self.click(self.wait_css('body > div:nth-child(2) > div.fade.in.modal > div > div > div.modal-footer > button.pf-c-button.pf-m-danger',
                                  cond=clickable))
         self.wait_css('#{}-name'.format(el_prefix_id), cond=invisible)
         wait(lambda: vol_name in self.machine.execute('lsblk'))
@@ -408,7 +408,7 @@ class MachinesStoragePoolTestSuite(MachinesLib):
                       cond=text_in,
                       text_='inactive')
         self.click(self.wait_css('#delete-{}'.format(el_prefix_id), cond=clickable))
-        self.click(self.wait_css('body > div:nth-child(2) > div.fade.in.modal > div > div > div.modal-footer > button.btn.btn-danger',
+        self.click(self.wait_css('body > div:nth-child(2) > div.fade.in.modal > div > div > div.modal-footer > button.pf-c-button.pf-m-danger',
                                  cond=clickable))
         self.wait_css('#{}-name'.format(el_prefix_id), cond=invisible)
         wait(lambda: vol_name in self.machine.execute('lsblk'))
@@ -425,7 +425,7 @@ class MachinesStoragePoolTestSuite(MachinesLib):
         self.check_box(self.wait_css('#storage-pool-delete-volumes', cond=clickable))
         wait(lambda: self.wait_css('#storage-pool-delete-volumes').is_selected())
 
-        self.click(self.wait_css('body > div:nth-child(2) > div.fade.in.modal > div > div > div.modal-footer > button.btn.btn-danger',
+        self.click(self.wait_css('body > div:nth-child(2) > div.fade.in.modal > div > div > div.modal-footer > button.pf-c-button.pf-m-danger',
                                  cond=clickable))
         self.wait_css('#{}-name'.format(el_prefix_id), cond=invisible)
         wait(lambda: vol_name not in self.machine.execute('lsblk'))
