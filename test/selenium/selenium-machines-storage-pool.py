@@ -148,7 +148,7 @@ class MachinesStoragePoolTestSuite(MachinesLib):
             self.click(self.wait_css('#delete-{}'.format(pool_name), cond=clickable))
             self.click(
                 self.wait_xpath(
-                    '/html/body/div[2]/div[2]/div/div/div[3]/button[2]',
+                    '/html/body/div[2]/div[2]/div/div/div[3]/button[1]',
                     cond=clickable))
             self.wait_css('#{}-name', cond=invisible)
 
