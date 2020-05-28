@@ -223,7 +223,7 @@ class MachinesStoragePoolTestSuite(MachinesLib):
         self.click(
             self.wait_css('#delete-{}'.format(el_id_prefix), cond=clickable))
         self.click(
-            self.wait_xpath('/html/body/div[2]/div[2]/div/div/div[3]/button[2]',
+            self.wait_xpath('/html/body/div[2]/div[2]/div/div/div[3]/button[1]',
                             cond=clickable))
         self.wait_css('#{}-name'.format(el_id_prefix), cond=invisible)
         self.machine.execute('sudo test -f {}/{}'.format(path, vol_name))
@@ -238,7 +238,7 @@ class MachinesStoragePoolTestSuite(MachinesLib):
         # make sure the checkbox can be checked
         self.check_box(self.wait_css('#storage-pool-delete-volumes'))
         self.click(
-            self.wait_xpath('/html/body/div[2]/div[2]/div/div/div[3]/button[2]',
+            self.wait_xpath('/html/body/div[2]/div[2]/div/div/div[3]/button[1]',
                             cond=clickable))
         self.wait_dialog_disappear()
         self.wait_css('#{}-name'.format(el_id_prefix), cond=invisible)
@@ -252,7 +252,7 @@ class MachinesStoragePoolTestSuite(MachinesLib):
         self.click(
             self.wait_css('#delete-{}'.format(el_id_prefix), cond=clickable))
         self.click(
-            self.wait_xpath('/html/body/div[2]/div[2]/div/div/div[3]/button[2]',
+            self.wait_xpath('/html/body/div[2]/div[2]/div/div/div[3]/button[1]',
                             cond=clickable))
         self.wait_css('#{}-name'.format(el_id_prefix), cond=invisible)
 
