@@ -186,7 +186,7 @@ class MachinesBasicTestSuite(MachinesLib):
         self.assertEqual(self.wait_css('#memory-size-slider .tooltip.tooltip-main.top .tooltip-inner').text.strip(),
                          '8')
 
-        self.click(self.wait_css('button.btn-cancel.btn.btn-default',
+        self.click(self.wait_css('button.pf-c-button.pf-m-link.btn-cancel',
                                  cond=clickable))
 
         self.click(self.wait_css('#create-new-vm', cond=clickable))
