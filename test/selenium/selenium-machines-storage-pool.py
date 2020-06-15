@@ -144,7 +144,6 @@ class MachinesStoragePoolTestSuite(MachinesLib):
                                                   target_path='/media',
                                                   source_path=device,
                                                   parted=part)
-            self.click(self.wait_css('#{}-name'.format(pool_name), cond=clickable))
             self.click(self.wait_css('#delete-{}'.format(pool_name), cond=clickable))
             self.click(
                 self.wait_xpath(
@@ -183,8 +182,6 @@ class MachinesStoragePoolTestSuite(MachinesLib):
         self.wait_css('#storage-pools-listing')
 
         el_id_prefix = self.create_storage_by_ui(name=name, target_path=path)
-        self.click(self.wait_css('#{}-name'.format(el_id_prefix),
-                                 cond=clickable))
 
         self.click(self.wait_css('#deactivate-{}'.format(el_id_prefix),
                                  cond=clickable))
@@ -219,8 +216,6 @@ class MachinesStoragePoolTestSuite(MachinesLib):
         self.machine.execute(
             'sudo virsh vol-create-as {} {} 10M'.format(name, vol_name))
         self.click(
-            self.wait_css('#{}-name'.format(el_id_prefix), cond=clickable))
-        self.click(
             self.wait_css('#delete-{}'.format(el_id_prefix), cond=clickable))
         self.click(
             self.wait_xpath('/html/body/div[2]/div[2]/div/div/div[3]/button[1]',
@@ -231,8 +226,6 @@ class MachinesStoragePoolTestSuite(MachinesLib):
         # Re-create the storage pool,
         # then delete it with deleting volumes in it
         el_id_prefix = self.create_storage_by_ui(name=name, target_path=path)
-        self.click(self.wait_css('#{}-name'.format(el_id_prefix),
-                                 cond=clickable))
         self.click(self.wait_css(
             '#delete-{}'.format(el_id_prefix), cond=clickable))
         # make sure the checkbox can be checked
@@ -272,13 +265,11 @@ class MachinesStoragePoolTestSuite(MachinesLib):
                                                  host=os.environ.get('NFS'),
                                                  source_path='/home/nfs',
                                                  storage_type='netfs')
-        self.wait_css('#{}-name'.format(el_prefix_id))
 
         vol_name = 'vol_' + self.random_string()
         vol_path = path + '/' + vol_name
 
         self.machine.execute('sudo virsh vol-create-as {} {} 100M --format qcow2'.format(name, vol_name))
-        self.click(self.wait_css('#{}-name'.format(el_prefix_id)))
         self.click(self.wait_css('#delete-{}'.format(el_prefix_id), cond=clickable))
         self.click(self.wait_css(
             'body > div:nth-child(2) > div.fade.in.modal > div > div > div.modal-footer > button.pf-c-button.pf-m-danger',
@@ -290,11 +281,9 @@ class MachinesStoragePoolTestSuite(MachinesLib):
                                   host=os.environ.get('NFS'),
                                   source_path='/home/nfs',
                                   storage_type='netfs')
-        self.wait_css('#{}-name'.format(el_prefix_id))
         # verify the volume
         self.machine.execute('test -f {}'.format(vol_path))
 
-        self.click(self.wait_css('#{}-name'.format(el_prefix_id)))
         self.click(self.wait_css('#delete-{}'.format(el_prefix_id), cond=clickable))
         # checkbox needs twice click
         self.send_keys(self.wait_css('#storage-pool-delete-volumes'),
@@ -310,7 +299,6 @@ class MachinesStoragePoolTestSuite(MachinesLib):
                                   host=os.environ.get('NFS'),
                                   source_path='/home/nfs',
                                   storage_type='netfs')
-        self.wait_css('#{}-name'.format(el_prefix_id))
         self.machine.execute('! test -f {}'.format(vol_path))
 
     def testDeleteISCSIPool(self):
@@ -328,8 +316,6 @@ class MachinesStoragePoolTestSuite(MachinesLib):
                                                  target_path='/dev/disk/by-path',
                                                  host='127.0.0.1',
                                                  source_path=iscsi_iqn)
-        self.click(
-            self.wait_css('#{}-name'.format(el_prefix_id), cond=clickable))
 
         self.click(
             self.wait_css('#delete-{}'.format(el_prefix_id), cond=clickable))
@@ -348,8 +334,6 @@ class MachinesStoragePoolTestSuite(MachinesLib):
                                                  target_path='/dev/disk/by-path',
                                                  host='127.0.0.1',
                                                  source_path=iscsi_iqn)
-        self.click(
-            self.wait_css('#{}-name'.format(el_prefix_id), cond=clickable))
 
         self.click(self.wait_css('#deactivate-{}'.format(el_prefix_id),
                                  cond=clickable))
@@ -387,7 +371,6 @@ class MachinesStoragePoolTestSuite(MachinesLib):
                                                  target_path='/media',
                                                  source_path=device,
                                                  parted='dos')
-        self.click(self.wait_css('#{}-name'.format(el_prefix_id), cond=clickable))
         self.machine.execute('sudo virsh vol-create-as {} {} --capacity {}'.format(pdd_name, vol_name, '10M'))
 
         self.click(self.wait_css('#delete-{}'.format(el_prefix_id),
@@ -402,7 +385,6 @@ class MachinesStoragePoolTestSuite(MachinesLib):
                                                  target_path='/media',
                                                  source_path=device,
                                                  parted='dos')
-        self.click(self.wait_css('#{}-name'.format(el_prefix_id), cond=clickable))
         self.click(self.wait_css('#deactivate-{}'.format(el_prefix_id), cond=clickable))
         self.wait_css('#{}-state'.format(el_prefix_id),
                       cond=text_in,
@@ -418,7 +400,6 @@ class MachinesStoragePoolTestSuite(MachinesLib):
                                                  target_path='/media',
                                                  source_path=device,
                                                  parted='dos')
-        self.click(self.wait_css('#{}-name'.format(el_prefix_id), cond=clickable))
         self.click(self.wait_css('#delete-{}'.format(el_prefix_id), cond=clickable))
         # make sure the checkbox can be checked
         wait(lambda: not self.wait_css('#storage-pool-delete-volumes').is_selected())

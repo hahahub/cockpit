@@ -365,7 +365,12 @@ class MachinesLib(SeleniumTest):
 
         self.wait_dialog_disappear()
         el_id_prefix = 'pool-{}-{}'.format(name, connection)
-        self.wait_css('#' + el_id_prefix + '-name')
+
+        # activate the storage pool since cockpit-machines will not activate the storage pool automatically now.
+        self.click(self.wait_css('#' + el_id_prefix + '-name', cond=clickable))
+        self.click(self.wait_css("#activate-" + el_id_prefix, cond=clickable))
+
+        wait(lambda: 'active' in self.wait_css('#' + el_id_prefix + '-state').text)
 
         return el_id_prefix
 
@@ -466,9 +471,15 @@ class MachinesLib(SeleniumTest):
         self.click(self.wait_css('#navbar-dropdown', cond=clickable))
         self.click(self.wait_css('#go-logout', cond=clickable))
 
-        self.login(user_name, user_name, authorized=privilege)
+        self.login(user_name, user_name)
         self.click(self.wait_link('Virtual Machines', cond=clickable))
         self.wait_frame("machines")
+
+        if user_group == 'wheel' and not privilege:
+            self.mainframe()
+            self.click(self.wait_css("#super-user-indicator button", cond=clickable))
+            self.click(self.wait_css("body > div:nth-child(4) > div.in.modal > div > div > div.modal-footer > button.pf-c-button.pf-m-primary", cond=clickable))
+            self.wait_frame("machines")
 
         # if operations is set false, just do some checks
         if not operations:

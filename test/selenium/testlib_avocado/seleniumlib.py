@@ -414,8 +414,8 @@ parameters:
         self.click(self.wait_id("login-button", cond=clickable))
         if wait_hostapp:
             self.wait_id("host-apps")
-        if add_ssh_key and not self.check_machine_execute():
-            self.add_authorised_ssh_key_to_user()
+        # if add_ssh_key and not self.check_machine_execute():
+        #     self.add_authorised_ssh_key_to_user()
 
     def add_authorised_ssh_key_to_user(self, pub_key=None):
         if pub_key is None:
