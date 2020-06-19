@@ -6,6 +6,7 @@ from testlib_avocado.libdisc import Disc
 from testlib_avocado.machineslib import MachinesLib
 from testlib_avocado.seleniumlib import clickable, invisible, text_in
 from selenium.webdriver.common.keys import Keys
+import time
 
 
 class MachinesStoragePoolTestSuite(MachinesLib):
@@ -145,6 +146,8 @@ class MachinesStoragePoolTestSuite(MachinesLib):
                                                   source_path=device,
                                                   parted=part)
             self.click(self.wait_css('#delete-{}'.format(pool_name), cond=clickable))
+            # sleep 1s to wait for the delate confirm dialog to fully load,otherwise it will fail
+            time.sleep(1)
             self.click(
                 self.wait_xpath(
                     '/html/body/div[2]/div[2]/div/div/div[3]/button[1]',
