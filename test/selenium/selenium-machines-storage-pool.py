@@ -106,6 +106,7 @@ class MachinesStoragePoolTestSuite(MachinesLib):
                                               source_path='/home/nfs',
                                               start_up=False)
 
+        time.sleep(1)
         page_res = self.wait_css('tr[data-row-id="' + pool_name + '"] > td:nth-child(4)').text.split('/')
         allocation_from_page = float(page_res[0].strip())
         capacity_from_page = float(page_res[1].split(' ')[1])
@@ -121,7 +122,7 @@ class MachinesStoragePoolTestSuite(MachinesLib):
                                         .group(0)
                                         .split(' ')[-1]) / (1024 ** 3),
                                   2)
-
+        
         self.assertEqual(allocation_from_page, allocation_from_cmd)
         self.assertEqual(capacity_from_page, capacity_from_cmd)
 
