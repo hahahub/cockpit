@@ -370,7 +370,7 @@ class MachinesLib(SeleniumTest):
         self.click(self.wait_css('#' + el_id_prefix + '-name', cond=clickable))
         self.click(self.wait_css("#activate-" + el_id_prefix, cond=clickable))
 
-        wait(lambda: 'active' in self.wait_css('#' + el_id_prefix + '-state').text)
+        wait(lambda: 'inactive' not in self.wait_css('#' + el_id_prefix + '-state').text)
 
         return el_id_prefix
 
