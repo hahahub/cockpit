@@ -122,7 +122,7 @@ class MachinesStoragePoolTestSuite(MachinesLib):
                                         .group(0)
                                         .split(' ')[-1]) / (1024 ** 3),
                                   2)
-        
+
         self.assertEqual(allocation_from_page, allocation_from_cmd)
         self.assertEqual(capacity_from_page, capacity_from_cmd)
 
