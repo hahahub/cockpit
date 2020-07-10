@@ -51,7 +51,7 @@ class MachinesStoragePoolTestSuite(MachinesLib):
         cmd_total = int(self.machine.execute('virsh pool-list --all | wc -l')) - 3 + int(self.machine.execute('sudo virsh pool-list --all | wc -l')) - 3
         self.assertEqual(cmd_total, page_active + page_inactive)
 
-        self.click(self.wait_css('#app div a'))
+        self.click(self.wait_css('#app a.pf-c-breadcrumb__link'))
         self.wait_css('#storage-pools-listing', cond=invisible)
         self.wait_css('#virtual-machines-listing')
 
@@ -67,7 +67,7 @@ class MachinesStoragePoolTestSuite(MachinesLib):
         pool_name = self.create_storage_by_ui(name=name, target_path=path)
         # Get information from page
         page_res = self.wait_css(
-            'tr[data-row-id="' + pool_name + '"] > td:nth-child(4)').text.split('/')
+            'tr[data-row-id="' + pool_name + '"] > td:nth-child(3) > div > div + div > span').text.split('/')
         allocation_from_page = float(page_res[0].strip())
         capacity_from_page = float(page_res[1].split(' ')[1])
         # Get information from command line
@@ -107,7 +107,7 @@ class MachinesStoragePoolTestSuite(MachinesLib):
                                               start_up=False)
 
         time.sleep(1)
-        page_res = self.wait_css('tr[data-row-id="' + pool_name + '"] > td:nth-child(4)').text.split('/')
+        page_res = self.wait_css('tr[data-row-id="' + pool_name + '"] > td:nth-child(3) > div > div + div > span').text.split('/')
         allocation_from_page = float(page_res[0].strip())
         capacity_from_page = float(page_res[1].split(' ')[1])
         cmd_res = self.machine.execute(

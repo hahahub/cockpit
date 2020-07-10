@@ -45,7 +45,7 @@ class MachinesOverviewTestSuite(MachinesLib):
         if vmstate == 'running':
             # shut down may not work if the VM is not completely started
             self.wait_vm_complete_start(args)
-            self.click(self.wait_css('#vm-{}-off'.format(name), cond=clickable))
+            self.click(self.wait_css('#vm-{}-shutdown-button'.format(name), cond=clickable))
             self.wait_css('#vm-{}-state'.format(name), cond=text_in, text_='shut off')
             self.wait_css('#vm-{}-vcpus-count'.format(name), cond=text_in, text_=count)
 

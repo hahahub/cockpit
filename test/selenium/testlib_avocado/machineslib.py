@@ -158,9 +158,8 @@ class MachinesLib(SeleniumTest):
         elif state == 'shut off':
             pass
 
-        self.wait_css('#vm-{}-row'.format(name), cond=text_in, text_=name)
         self.wait_css('#vm-{}-state'.format(name), cond=text_in, text_=state)
-        self.click(self.wait_css("tbody tr[data-row-id='vm-{}'] th".format(name), cond=clickable))
+        self.click(self.wait_css("tr[data-row-id='vm-{}-system'] > td > button".format(name), cond=clickable))
 
         return args
 
@@ -275,9 +274,6 @@ class MachinesLib(SeleniumTest):
         if mem_unit == 'M':
             self.select_by_text(self.wait_css('#memory-size-unit-select'),
                                 'MiB')
-        # If pass the 'self.wait_css' to the 'self.send_keys' directly,
-        # sometimes, the element will is just located but not attached,
-        # so there will be an error there, use a local variable to try to slow this process
         self.send_keys(self.wait_css('#memory-size'),
                        mem,
                        ctrla=True)
@@ -312,7 +308,7 @@ class MachinesLib(SeleniumTest):
                              fatal=False):
             self.click(self.wait_text("show more"))
             raise SeleniumElementFailure(self.wait_css('#app > div > section > div > div > p').text)
-        self.wait_css('#vm-{}-row'.format(name))
+        self.wait_css('#vm-{}-state'.format(name))
 
     def create_storage(self, name, path, active=False):
         pool_xml = STORAGE_XML.format(name, path)
@@ -484,7 +480,7 @@ class MachinesLib(SeleniumTest):
         # if operations is set false, just do some checks
         if not operations:
             self.assertEqual(
-                self.wait_css('#virtual-machines-listing tr td').text,
+                self.wait_css('#virtual-machines-listing tr td').text.strip(),
                 'No VM is running or defined on this host')
             self.assertEqual(
                 self.wait_css('#app div:nth-child(1) .card-pf-aggregate-status-count').text,
@@ -498,9 +494,7 @@ class MachinesLib(SeleniumTest):
             log_file = vm_args['logfile']
 
             # After re-login, extend the vm-row is needed
-            self.click(self.wait_css(
-                "tbody tr[data-row-id='vm-{}'] th".format(vm_name),
-                cond=clickable))
+            self.click(self.wait_css("tr[data-row-id='vm-{}-system'] > td > button".format(vm_name), cond=clickable))
 
             self.check_vm_info(vm_name)
             self.check_vm_pause_and_resume(vm_name)
@@ -512,7 +506,7 @@ class MachinesLib(SeleniumTest):
             self.check_vm_force_off(vm_name)
 
     def check_vm_info(self, vm_name):
-        self.wait_css('#vm-{}-row'.format(vm_name))
+        self.wait_css('#vm-{}-state'.format(vm_name))
 
         self.wait_css('#vm-{}-memory-count'.format(vm_name), cond=text_in, text_='64 MiB')
         self.wait_css('#vm-{}-vcpus-count'.format(vm_name), cond=text_in, text_='1')
@@ -521,74 +515,86 @@ class MachinesLib(SeleniumTest):
         self.wait_css('#vm-{}-boot-order'.format(vm_name), cond=text_in, text_='disk,network')
 
     def check_vm_pause_and_resume(self, vm_name):
-        self.wait_css('#vm-{}-row'.format(vm_name))
+        self.wait_css('#vm-{}-state'.format(vm_name))
 
+        self.click(self.wait_css('#vm-{}-action-kebab button'.format(vm_name),
+                                 cond=clickable))
+        self.wait_css('ul.pf-c-dropdown__menu.pf-m-align-right')
         self.click(self.wait_css('#vm-{}-pause'.format(vm_name), cond=clickable))
-        self.wait_css('#vm-{}-pause'.format(vm_name), cond=invisible)
         self.assertEqual(self.wait_css('#vm-{}-state'.format(vm_name)).text, 'paused')
 
+        self.click(self.wait_css('#vm-{}-action-kebab button'.format(vm_name),
+                                 cond=clickable))
+        self.wait_css('ul.pf-c-dropdown__menu.pf-m-align-right')
         self.click(self.wait_css('#vm-{}-resume'.format(vm_name), cond=clickable))
-        self.wait_css('#vm-{}-resume'.format(vm_name), cond=invisible)
         self.assertEqual(self.wait_css('#vm-{}-state'.format(vm_name)).text, 'running')
 
     def check_vm_reboot(self, vm_name, log_file):
-        self.wait_css('#vm-{}-row'.format(vm_name))
+        self.wait_css('#vm-{}-state'.format(vm_name))
 
         wait(lambda: 'cirros login:' in self.machine.execute(
             "sudo tail -n 1 {}".format(log_file)) or re.search(
             'cirros login:.*NMI received',
             self.machine.execute("sudo tail -n 3 {}".format(log_file))), delay=5)
 
+        self.click(self.wait_css('#vm-{}-action-kebab button'.format(vm_name),
+                                 cond=clickable))
+        self.wait_css('ul.pf-c-dropdown__menu.pf-m-align-right')
         self.click(self.wait_css('#vm-{}-reboot'.format(vm_name), cond=clickable))
         wait(lambda: "reboot: Power down" in self.machine.execute("sudo cat {}".format(log_file)))
 
     def check_vm_force_reboot(self, vm_name, log_file):
-        self.wait_css('#vm-{}-row'.format(vm_name))
+        self.wait_css('#vm-{}-state'.format(vm_name))
 
         self.machine.execute('sudo sh -c "echo > {}"'.format(log_file))
 
-        self.click(self.wait_css('#vm-{}-reboot-caret'.format(vm_name), cond=clickable))
+        self.click(self.wait_css('#vm-{}-action-kebab button'.format(vm_name), cond=clickable))
+        self.wait_css('ul.pf-c-dropdown__menu.pf-m-align-right')
         self.click(self.wait_css('#vm-{}-forceReboot'.format(vm_name), cond=clickable))
         wait(lambda: 'Initializing cgroup subsys cpuset' in self.machine.execute('sudo cat {}'.format(log_file)))
 
     def check_vm_force_off(self, vm_name):
-        self.wait_css('#vm-{}-row'.format(vm_name))
+        self.wait_css('#vm-{}-state'.format(vm_name))
 
-        self.click(self.wait_css('#vm-{}-off-caret'.format(vm_name), cond=clickable))
+        self.click(self.wait_css('#vm-{}-action-kebab button'.format(vm_name),
+                                 cond=clickable))
+        self.wait_css('ul.pf-c-dropdown__menu.pf-m-align-right')
         self.click(self.wait_css('#vm-{}-forceOff'.format(vm_name), cond=clickable))
-        self.wait_css('#vm-{}-off'.format(vm_name), cond=invisible)
+        self.wait_css('#vm-{}-shutdown-button'.format(vm_name), cond=invisible)
         self.wait_css('#vm-{}-run'.format(vm_name))
 
     def check_send_NMI_to_vm(self, vm_name, log_file):
-        self.wait_css('#vm-{}-row'.format(vm_name))
+        self.wait_css('#vm-{}-state'.format(vm_name))
 
         wait(lambda: 'cirros login:' in self.machine.execute(
             "sudo tail -n 1 {}".format(log_file)) or re.search(
             'cirros login:.*NMI received',
             self.machine.execute("sudo tail -n 3 {}".format(log_file))))
 
-        self.click(self.wait_css('#vm-{}-off-caret'.format(vm_name), cond=clickable))
+        self.click(self.wait_css('#vm-{}-action-kebab button'.format(vm_name),
+                                 cond=clickable))
+        self.wait_css('ul.pf-c-dropdown__menu.pf-m-align-right')
         self.click(self.wait_css('#vm-{}-sendNMI'.format(vm_name), cond=clickable))
         wait(lambda: "NMI received" in self.machine.execute("sudo cat {}".format(log_file)))
 
     def check_vm_off(self, vm_name, log_file):
-        self.wait_css('#vm-{}-row'.format(vm_name))
+        self.wait_css('#vm-{}-state'.format(vm_name))
 
         wait(lambda: 'cirros login:' in self.machine.execute(
             "sudo tail -n 1 {}".format(log_file)) or re.search(
             'cirros login:.*NMI received',
             self.machine.execute("sudo tail -n 3 {}".format(log_file))))
 
-        self.click(self.wait_css('#vm-{}-off'.format(vm_name), cond=clickable))
-        self.wait_css('#vm-{}-off'.format(vm_name), cond=invisible)
+        self.click(self.wait_css('#vm-{}-shutdown-button'.format(vm_name), cond=clickable))
+        self.wait_css('#vm-{}-shutdown-button'.format(vm_name), cond=invisible)
         self.wait_css('#vm-{}-run'.format(vm_name))
 
     def check_vm_run(self, vm_name):
-        self.wait_css('#vm-{}-row'.format(vm_name))
+        self.wait_css('#vm-{}-state'.format(vm_name))
 
         self.click(self.wait_css('#vm-{}-run'.format(vm_name), cond=clickable))
         self.wait_css('#vm-{}-run'.format(vm_name), cond=invisible)
-        self.wait_css('#vm-{}-off'.format(vm_name))
+        self.wait_css('#vm-{}-shutdown-button'.format(vm_name))
 
     def prepare_disk(self, pool_name):
         pool_a = pool_name + '_' + MachinesLib.random_string()

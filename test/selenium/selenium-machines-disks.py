@@ -102,8 +102,8 @@ class MachinesDisksTestSuite(MachinesLib):
         self.wait_dialog_disappear()
         self.wait_css('#vm-{}-disks-vdd-device'.format(name))
 
-        self.click(self.wait_css('#vm-{}-off'.format(name), cond=clickable))
-        self.wait_css('#vm-{}-off'.format(name), cond=invisible)
+        self.click(self.wait_css('#vm-{}-shutdown-button'.format(name), cond=clickable))
+        self.wait_css('#vm-{}-shutdown-button'.format(name), cond=invisible)
 
         self.assertEqual(self.machine.execute("sudo virsh list --all | grep " + name + " | awk '{print $3}' ORS=''"), 'shut')
         self.assertEqual(self.machine.execute(
@@ -122,8 +122,8 @@ class MachinesDisksTestSuite(MachinesLib):
         self.click(self.wait_css('#delete-{}-disk-vda'.format(name), cond=clickable))
         self.click(self.wait_css('.modal-footer button.pf-c-button.pf-m-danger'.format(name), cond=clickable))
         self.wait_css('vm-{}-disks-vda-device'.format(name), cond=invisible)
-        self.click(self.wait_css('#vm-{}-off'.format(name), cond=clickable))
-        self.wait_css('#vm-{}-off'.format(name), cond=invisible)
+        self.click(self.wait_css('#vm-{}-shutdown-button'.format(name), cond=clickable))
+        self.wait_css('#vm-{}-shutdown-button'.format(name), cond=invisible)
         self.click(self.wait_css('#vm-{}-run'.format(name), cond=clickable))
         self.wait_css('#vm-{}-run'.format(name), cond=invisible)
         self.wait_css('#vm-{}-disks-vda-device'.format(name), cond=invisible)
@@ -202,7 +202,7 @@ class MachinesDisksTestSuite(MachinesLib):
                                               host='127.0.0.1',
                                               source_path=iqn)
         self.wait_css('#{}-name'.format(el_prefix))
-        self.click(self.wait_css('#app div a', cond=clickable))
+        self.click(self.wait_css('#app a.pf-c-breadcrumb__link', cond=clickable))
         self.wait_css('#virtual-machines-listing')
 
         disc.clear()

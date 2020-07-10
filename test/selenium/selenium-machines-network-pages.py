@@ -52,7 +52,7 @@ class MachinesNetworksTestSuite(MachinesLib):
             self.machine.execute('sudo virsh net-list --all | awk \'NR>3{if($0!="")print}\' | wc -l'))
 
         self.assertEqual(net_cmd_total, page_active + page_inactive)
-        self.click(self.wait_css('#app div a'))
+        self.click(self.wait_css('#app a.pf-c-breadcrumb__link'))
         self.wait_css('#networks-listing', cond=invisible)
         self.wait_css('#virtual-machines-listing')
 
@@ -118,6 +118,6 @@ class MachinesNetworksTestSuite(MachinesLib):
                                  cond=clickable))
         self.assertTrue(self.wait_css('#delete-network-{}-system'.format(net_1)).get_attribute('disabled'))
         ActionChains(self.driver).move_to_element(self.wait_css('#delete-network-{}-system'.format(net_1))).perform()
-        self.wait_css('#delete-network-{}-system-tooltip div.tooltip-inner'.format(net_1),
+        self.wait_css('#delete-network-{}-system-tooltip'.format(net_1),
                       cond=text_in,
                       text_="Non-persistent network cannot be deleted. It ceases to exists when it's deactivated.")
