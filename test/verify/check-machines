@@ -1616,7 +1616,7 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
             "virsh pool-define-as poolDisk disk - - {0} - {1}".format(dev, os.path.join(self.vm_tmpdir, "poolDiskImages")),
             "virsh pool-build poolDisk --overwrite",
             "virsh pool-start poolDisk",
-            "virsh vol-create-as poolDisk sda1 1024"
+            "virsh vol-create-as poolDisk sdb1 1024"
         ]
         self.machine.execute(" && ".join(cmds))
 
@@ -1629,7 +1629,7 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
                                                            location=config.NOVELL_MOCKUP_ISO_PATH,
                                                            memory_size=256, memory_size_unit='MiB',
                                                            storage_pool="poolDisk",
-                                                           storage_volume="sda1"))
+                                                           storage_volume="sdb1"))
 
         if "debian" not in self.machine.image and "ubuntu" not in self.machine.image:
             # Test create VM with disk of type "network"
@@ -2373,7 +2373,7 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
             # adjust to how cockpit_format_bytes() formats sizes > 1024 MiB -- this depends on how much RAM
             # the host has (less or more than 1 GiB), and thus needs to be dynamic
             if dialog.memory_size >= 1024 and dialog.memory_size_unit == "MiB":
-                memory_text = "%.2f GiB" % (dialog.memory_size/1024)
+                memory_text = "%.1f GiB" % (dialog.memory_size/1024)
             else:
                 memory_text = "{0} {1}".format(dialog.memory_size, dialog.memory_size_unit)
             b.wait_in_text("tbody.pf-m-expanded .ct-listing-panel-body td:nth-child(1) .usage-donut-caption", memory_text)
@@ -4497,11 +4497,12 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
             remove=True,
         ).execute()
 
+        # For downstream, the host use the sda for its device, so we should use sdb or others here
         StorageVolumeCreateDialog(
             self,
             pool_name="disk-pool",
             pool_type="disk",
-            vol_name="sda1", # Partition names must follow pattern of sda1, sda2...
+            vol_name="sdb1", # Partition names must follow pattern of sdx1, sdx2...
             size="10", # Only 50MiB available on disk-pool
             unit="MiB",
             format="none",
