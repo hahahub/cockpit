@@ -154,14 +154,15 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
         m.execute("virsh net-start default || true")
         m.execute("until virsh net-info default | grep 'Active:\s*yes'; do sleep 1; done")
 
-    def startVm(self, name, graphics='vnc', ptyconsole=False):
+    def startVm(self, name, graphics='vnc', img=None, ptyconsole=False):
         m = self.machine
 
-        base = "/var/lib/libvirt/images/ppc64lemini.qcow2"
+        base = "/tmp/s390xmini.qcow2"
         m.execute('test -f {}'.format(base))
-        img = "/var/lib/libvirt/images/{0}-2.img".format(name)
-        m.execute("cp {} {}".format(base, img))
-        m.execute("chmod 777 {0}".format(img))
+        if not img:
+            img = "/var/lib/libvirt/images/{0}-2.img".format(name)
+            m.execute("qemu-img create -q -f qcow2 -o backing_file={},backing_fmt=qcow2 {}".format(base, img))
+            m.execute("chmod 777 {0}".format(img))
 
         args = {
             "name": name,
@@ -327,7 +328,7 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
         # Wait for the system to completely start
         wait(lambda: "localhost login" in self.machine.execute("cat {0}".format(args["logfile"])), delay=3)
 
-        # # In ppc64le will restart the VM
+        # # In s390x will shutoff the VM
         # # Send Non-Maskable Interrupt (no change in VM state is expected)
         # b.click("#vm-subVmTest1-action-kebab button")
         # b.click("#vm-subVmTest1-sendNMI")
@@ -348,14 +349,14 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
         self.machine.execute("echo '' > {0}".format(args["logfile"]))
         b.click("#vm-subVmTest1-action-kebab button")
         b.click("#vm-subVmTest1-reboot")
-        wait(lambda: "QEMU Starting" in self.machine.execute("cat {0}".format(args["logfile"])), delay=3)
+        wait(lambda: "Requesting system reboot" in self.machine.execute("cat {0}".format(args["logfile"])), delay=3)
         b.wait_in_text("#vm-subVmTest1-state", "running")
 
         # force reboot
         self.machine.execute("echo '' > {0}".format(args["logfile"]))
         b.click("#vm-subVmTest1-action-kebab button")
         b.click("#vm-subVmTest1-forceReboot")
-        wait(lambda: "QEMU Starting" in self.machine.execute("cat {0}".format(args["logfile"])), delay=3)
+        wait(lambda: "LOADPARM" in self.machine.execute("cat {0}".format(args["logfile"])), delay=3)
         b.wait_in_text("#vm-subVmTest1-state", "running")
 
         # shut off
@@ -584,7 +585,7 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
         # Test domstats
         self.wait_for_disk_stats("subVmTest1", "vda")
         if b.is_present("#vm-subVmTest1-disks-vda-used"):
-            b.wait_in_text("#vm-subVmTest1-disks-vda-used", "1.1")
+            b.wait_in_text("#vm-subVmTest1-disks-vda-used", "0.00")
 
         # Test add disk by external action
         m.execute("qemu-img create -f raw /var/lib/libvirt/images/image3.img 128M")
@@ -884,7 +885,6 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
             volume_format='raw',
         ).open().add_disk().verify_disk_added()
 
-        # # Add nfs disk will be 'Permission denied' in ppc64le
         # VMAddDiskDialog(
         #     self,
         #     pool_name='nfs-pool',
@@ -931,15 +931,6 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
             expected_target='sda',
         ).execute()
 
-        VMAddDiskDialog(
-            self,
-            pool_name='myPoolOne',
-            volume_name='usb_bus_disk',
-            use_existing_volume=False,
-            bus_type='usb',
-            expected_target='sdb',
-        ).execute()
-
         # shut off
         b.click("#vm-subVmTest1-action-kebab button")
         b.click("#vm-subVmTest1-forceOff")
@@ -953,7 +944,6 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
         b.wait_present("#vm-subVmTest1-disks-vdc-device")
         b.wait_present("#vm-subVmTest1-disks-vdd-device")
 
-        # # In ppc64le, this place will be 'unsupport'
         # # testing sata disk after VM shutoff because sata disk cannot be hotplugged
         # VMAddDiskDialog(
         #     self,
@@ -1034,7 +1024,7 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
         b = self.browser
         m = self.machine
 
-        self.startVm("subVmTest1")
+        self.startVm("subVmTest1", img="/tmp/Nictest.qcow2")
 
         self.login_and_go("/machines")
         b.wait_in_text("body", "Virtual Machines")
@@ -1244,10 +1234,10 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
 
         # make sure the log file is full - then empty it and reboot the VM - the log file should fill up again
         wait(lambda: "localhost login:" in self.machine.execute("cat {0}".format(args["logfile"])), delay=3)
-        self.machine.execute("echo '' > {0}".format(args["logfile"]))
-        b.click("#{0}-system-vnc-sendkey button".format("subVmTest1"))
-        b.click("#ctrl-alt-Delete")
-        wait(lambda: "QEMU Starting" in self.machine.execute("cat {0}".format(args["logfile"])), delay=3)
+        # self.machine.execute("echo '' > {0}".format(args["logfile"]))
+        # b.click("#{0}-system-vnc-sendkey button".format("subVmTest1"))
+        # b.click("#ctrl-alt-Delete")
+        # wait(lambda: "Requesting system reboot" in self.machine.execute("cat {0}".format(args["logfile"])), delay=3)
 
     def testInlineConsoleWithUrlRoot(self, urlroot=""):
         self.testInlineConsole(urlroot="/webcon")
@@ -1321,7 +1311,7 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
         self.toggleVmRow(name)
 
         # Make sure that the VM booted normally before attempting to suspend it
-        wait(lambda: "QEMU Starting" in self.machine.execute("cat {0}".format(args["logfile"])), delay=3)
+        wait(lambda: "OpenRC" in self.machine.execute("cat {0}".format(args["logfile"])), delay=3)
 
         self.machine.execute("virsh -c qemu:///system suspend {0}".format(name))
         b.wait_in_text("#vm-{0}-state".format(name), "paused")
@@ -1593,7 +1583,7 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
 
         # The file is full of ANSI control characters in between every letter, filter them out
         # In ppc64le, the console log is not the same
-        wait(lambda: self.machine.execute(r"sed 's,\x1B\[[0-9;]*[a-zA-Z],,g' /tmp/serial.txt | grep Ready!"), delay=3)
+        wait(lambda: self.machine.execute(r"sed 's,\x1B\[[0-9;]*[a-zA-Z],,g' /tmp/serial.txt | grep 'Network loading done'"), delay=3)
 
         self.machine.execute("virsh destroy pxe-guest && virsh undefine pxe-guest")
 
@@ -1624,7 +1614,7 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
             "virsh pool-define-as poolDisk disk - - {0} - {1}".format(dev, os.path.join(self.vm_tmpdir, "poolDiskImages")),
             "virsh pool-build poolDisk --overwrite",
             "virsh pool-start poolDisk",
-            "virsh vol-create-as poolDisk sdb1 1024"
+            "virsh vol-create-as poolDisk sda1 1024"
         ]
         self.machine.execute(" && ".join(cmds))
 
@@ -1637,7 +1627,7 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
                                                            location=config.NOVELL_MOCKUP_ISO_PATH,
                                                            memory_size=256, memory_size_unit='MiB',
                                                            storage_pool="poolDisk",
-                                                           storage_volume="sdb1"))
+                                                           storage_volume="sda1"))
 
         if "debian" not in self.machine.image and "ubuntu" not in self.machine.image:
             # Test create VM with disk of type "network"
@@ -1815,25 +1805,25 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
                                                 storage_size=100, storage_size_unit='MiB',
                                                 start_vm=False))
 
-        virtInstallVersion = self.machine.execute("virt-install --version")
-        if virtInstallVersion >= "2":
-            # Test detection of ISO file in URL
-            runner.createTest(TestMachines.VmDialog(self, sourceType='url',
-                                                    location=config.ISO_URL,
-                                                    memory_size=256, memory_size_unit='MiB',
-                                                    storage_pool="No Storage",
-                                                    start_vm=True))
-
-            # This functionality works on debian only because of extra dep.
-            # Check error is returned if dependency is missing
-            if self.machine.image.startswith("debian"):
-                # remove package
-                self.machine.execute("dpkg -P qemu-block-extra")
-                runner.checkDialogErrorTest(TestMachines.VmDialog(self, sourceType='url',
-                                                                  location=config.ISO_URL,
-                                                                  memory_size=256, memory_size_unit='MiB',
-                                                                  storage_pool="No Storage",
-                                                                  start_vm=True), ["qemu", "protocol"])
+        # virtInstallVersion = self.machine.execute("virt-install --version")
+        # if virtInstallVersion >= "2":
+        #     # Test detection of ISO file in URL
+        #     runner.createTest(TestMachines.VmDialog(self, sourceType='url',
+        #                                             location=config.ISO_URL,
+        #                                             memory_size=256, memory_size_unit='MiB',
+        #                                             storage_pool="No Storage",
+        #                                             start_vm=True))
+        #
+        #     # This functionality works on debian only because of extra dep.
+        #     # Check error is returned if dependency is missing
+        #     if self.machine.image.startswith("debian"):
+        #         # remove package
+        #         self.machine.execute("dpkg -P qemu-block-extra")
+        #         runner.checkDialogErrorTest(TestMachines.VmDialog(self, sourceType='url',
+        #                                                           location=config.ISO_URL,
+        #                                                           memory_size=256, memory_size_unit='MiB',
+        #                                                           storage_pool="No Storage",
+        #                                                           start_vm=True), ["qemu", "protocol"])
 
     def testDisabledCreate(self):
         self.login_and_go("/machines")
@@ -2171,7 +2161,7 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
             self.assertTrue = test_obj.assertTrue
             self.test_obj = test_obj
 
-            self.machine.execute("touch {0}".format(TestMachines.TestCreateConfig.NOVELL_MOCKUP_ISO_PATH))
+            self.machine.execute("cp /tmp/s390x.iso {}".format(TestMachines.TestCreateConfig.NOVELL_MOCKUP_ISO_PATH))
             self.machine.execute("qemu-img create {0} 500M".format(TestMachines.TestCreateConfig.VALID_DISK_IMAGE_PATH))
             test_obj.addCleanup(test_obj.machine.execute, "rm -f {0} {1}".format(
                 TestMachines.TestCreateConfig.NOVELL_MOCKUP_ISO_PATH,
@@ -2369,7 +2359,7 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
             # adjust to how cockpit_format_bytes() formats sizes > 1024 MiB -- this depends on how much RAM
             # the host has (less or more than 1 GiB), and thus needs to be dynamic
             if dialog.memory_size >= 1024 and dialog.memory_size_unit == "MiB":
-                memory_text = "%.1f GiB" % (dialog.memory_size/1024)
+                memory_text = "%.2f GiB" % (dialog.memory_size/1024)
             else:
                 memory_text = "{0} {1}".format(dialog.memory_size, dialog.memory_size_unit)
             b.wait_in_text("tbody.pf-m-expanded .ct-listing-panel-body td:nth-child(1) .usage-donut-caption", memory_text)
@@ -2691,53 +2681,55 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
         # Change the os boot firmware configuration
         supports_firmware_config = m.image in ['fedora-32', 'fedora-31', 'fedora-testing', 'rhel-8-3', 'rhel-8-3-distropkg', 'debian-testing', 'ubuntu-stable', 'ubuntu-2004']
         if supports_firmware_config:
-            b.wait_in_text("#vm-VmNotInstalled-firmware", "BIOS")
-            b.click("#vm-VmNotInstalled-firmware")
-            b.wait_present(".modal-body")
-            b.select_from_dropdown("select", "UEFI")
-            b.click("#firmware-dialog-apply")
-            b.wait_not_present(".modal-body")
-            b.wait_in_text("#vm-VmNotInstalled-firmware", "UEFI")
-
-            # Temporarily delete the OVMF binary and check the firmware options again
-            if "fedora" in m.image or "rhel" in m.image:
-                ovmf_path = "/usr/share/edk2"
-            elif "debian" in m.image or "ubuntu" in m.image:
-                ovmf_path = "/usr/share/OVMF"
-            else:
-                raise AssertionError("Unhandled distro for OVMF path")
-
-            m.execute("mount -t tmpfs tmpfs " + ovmf_path)
-            self.addCleanup(m.execute, "umount {0} || true".format(ovmf_path))
-
-            # Reload for the new configuration to be read
-            b.reload()
-            b.enter_page('/machines')
-            self.toggleVmRow("VmNotInstalled")
-
-            # HACK: Capabilities are not updated dynamically
-            # https://bugzilla.redhat.com/show_bug.cgi?id=1807198
-            def hack_broken_caps():
-                if m.image in ["fedora-32", "fedora-testing", "rhel-8-3", "rhel-8-3-distropkg", "ubuntu-2004", "debian-testing"]:
-                    m.execute("systemctl restart libvirtd")
-                    # We don't get events for shut off VMs so reload the page
-                    b.reload()
-                    b.enter_page('/machines')
-                    self.toggleVmRow("VmNotInstalled")
-
-            hack_broken_caps()
+            b.wait_in_text("#vm-VmNotInstalled-firmware", "Unknown firmware")
+            # b.click("#vm-VmNotInstalled-firmware")
+            # b.wait_present(".modal-body")
+            # b.select_from_dropdown("select", "UEFI")
+            # b.click("#firmware-dialog-apply")
+            # b.wait_not_present(".modal-body")
+            # b.wait_in_text("#vm-VmNotInstalled-firmware", "UEFI")
+            #
+            # # Temporarily delete the OVMF binary and check the firmware options again
+            # if "fedora" in m.image or "rhel" in m.image:
+            #     ovmf_path = "/usr/share/edk2"
+            # elif "debian" in m.image or "ubuntu" in m.image:
+            #     ovmf_path = "/usr/share/OVMF"
+            # else:
+            #     raise AssertionError("Unhandled distro for OVMF path")
+            #
+            # m.execute("mount -t tmpfs tmpfs " + ovmf_path)
+            # self.addCleanup(m.execute, "umount {0} || true".format(ovmf_path))
+            #
+            # # Reload for the new configuration to be read
+            # b.reload()
+            # b.enter_page('/machines')
+            # self.toggleVmRow("VmNotInstalled")
+            #
+            # # HACK: Capabilities are not updated dynamically
+            # # https://bugzilla.redhat.com/show_bug.cgi?id=1807198
+            # def hack_broken_caps():
+            #     if m.image in ["fedora-32", "fedora-testing", "rhel-8-3", "rhel-8-3-distropkg", "ubuntu-2004", "debian-testing"]:
+            #         m.execute("systemctl restart libvirtd")
+            #         # We don't get events for shut off VMs so reload the page
+            #         b.reload()
+            #         b.enter_page('/machines')
+            #         self.toggleVmRow("VmNotInstalled")
+            #
+            # hack_broken_caps()
 
             b.mouse("#vm-VmNotInstalled-firmware-tooltip", "mouseenter")
             b.wait_in_text(".pf-c-tooltip", "Libvirt did not detect any UEFI/OVMF firmware image installed on the host")
             b.mouse("#vm-VmNotInstalled-firmware-tooltip", "mouseleave")
             b.wait_not_present("#missing-uefi-images")
-            m.execute("umount " + ovmf_path)
+            # m.execute("umount " + ovmf_path)
 
-            hack_broken_caps()
+            # hack_broken_caps()
         else:
             b.wait_not_present("#vm-VmNotInstalled-firmware")
 
         # Install the VM
+        # add a wait here as there will be two same rows if we click immediately
+        time.sleep(5)
         b.click("#vm-VmNotInstalled-install")
 
         # Wait for virt-install to define the VM and then stop it - otherwise we get 'domain is ready being removed' error
@@ -2782,7 +2774,7 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
 
         # Check firmware changes persisted
         if supports_firmware_config:
-            b.wait_in_text("#vm-VmNotInstalled-firmware", "UEFI")
+            b.wait_in_text("#vm-VmNotInstalled-firmware", "Unknown firmware")
         else:
             b.wait_not_present("#vm-VmNotInstalled-firmware")
 
@@ -2933,7 +2925,7 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
 
         # Check memory hotunplugging
         # The balloon driver needs to be loaded to descrease memory
-        wait(lambda: "QEMU Starting" in self.machine.execute("cat {0}".format(args["logfile"])), delay=3)
+        wait(lambda: "OpenRC" in self.machine.execute("cat {0}".format(args["logfile"])), delay=3)
 
         b.set_input_text("#vm-subVmTest1-memory-modal-memory", str(current_memory - 10))
         b.blur("#vm-subVmTest1-memory-modal-memory")
@@ -3041,7 +3033,7 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
         m.execute("> {0}".format(args["logfile"])) # clear logfile
         m.execute("virsh start subVmTest1")
         # Make sure that the VM booted normally before attempting to suspend it
-        wait(lambda: "QEMU Starting" in m.execute("cat {0}".format(args["logfile"])), delay=3)
+        wait(lambda: "OpenRC" in m.execute("cat {0}".format(args["logfile"])), delay=3)
         m.execute("virsh suspend subVmTest1")
         b.wait_in_text("#vm-subVmTest1-state", "paused")
         b.wait_attr("#delete-subVmTest1-disk-vde", "disabled", "")
@@ -3615,6 +3607,7 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
         b.reload()
         b.enter_page('/machines')
         self.togglePoolRow("myPoolTwo", connectionName)
+        time.sleep(1)
         b.click("#pool-myPoolTwo-{0}-storage-volumes".format(connectionName)) # open the "Storage Volumes" subtab
         b.wait_not_present("#pool-myPoolTwo-{0}-volume-VolumeThree-name".format(connectionName))
 
@@ -3708,6 +3701,7 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
         # so use waitPoolRow.If the case fails here in the future, then we need to find another way to resolve this.
         self.waitPoolRow("myPoolTwo", connectionName)
         self.togglePoolRow("myPoolTwo", connectionName)
+        time.sleep(1)
         b.click("#pool-myPoolTwo-{0}-storage-volumes".format(connectionName)) # open the "Storage Volumes" subtab
 
         b.wait_present("#pool-myPoolTwo-{0}-volume-VolumeOne-usedby".format(connectionName))
@@ -4504,7 +4498,7 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
             self,
             pool_name="disk-pool",
             pool_type="disk",
-            vol_name="sdb1", # Partition names must follow pattern of sdx1, sdx2...
+            vol_name="sda1", # Partition names must follow pattern of sdx1, sdx2...
             size="10", # Only 50MiB available on disk-pool
             unit="MiB",
             format="none",
@@ -4699,7 +4693,7 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
         m.execute("> {0}".format(args["logfile"])) # clear logfile
         b.click("#vm-subVmTest1-run")
         b.wait_in_text("#vm-subVmTest1-state", "running")
-        wait(lambda: "SLOF" in self.machine.execute("cat {0}".format(args["logfile"])), delay=3)
+        wait(lambda: "OpenRC" in self.machine.execute("cat {0}".format(args["logfile"])), delay=3)
 
         # Test permanent attachment to running VM
         NICAddDialog(
@@ -4709,22 +4703,23 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
             permanent=True,
         ).execute()
 
-        # # Test NIC attaching to non-persistent VM
-        # m.execute("virsh dumpxml --inactive subVmTest1 > /tmp/subVmTest1.xml; virsh undefine subVmTest1")
-        # NICAddDialog(
-        #     self,
-        #     source_type="Virtual network",
-        #     source="test_network",
-        #     mac="52:54:00:a5:f8:c1",
-        #     nic_num=3,
-        #     persistent_vm=False,
-        # ).execute()
-        # m.execute("virsh define /tmp/subVmTest1.xml")
+        # Test NIC attaching to non-persistent VM
+        m.execute("virsh dumpxml --inactive subVmTest1 > /tmp/subVmTest1.xml; virsh undefine subVmTest1")
+        NICAddDialog(
+            self,
+            source_type="Virtual network",
+            source="test_network",
+            mac="52:54:00:a5:f8:c1",
+            nic_num=3,
+            persistent_vm=False,
+        ).execute()
+        m.execute("virsh define /tmp/subVmTest1.xml")
 
         b.click("#vm-subVmTest1-action-kebab button")
         b.click("#vm-subVmTest1-forceOff")
         b.wait_in_text("#vm-subVmTest1-state", "shut off")
 
+        time.sleep(2)
         NICAddDialog(
             self,
             remove=False,

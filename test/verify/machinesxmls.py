@@ -71,10 +71,6 @@ TEST_NETWORK4_XML = """
 """
 
 SPICE_XML = """
-    <video>
-      <model type='vga' heads='1' primary='yes'/>
-      <alias name='video0'/>
-    </video>
     <graphics type='spice' port='5900' autoport='yes' listen='127.0.0.1'>
       <listen type='address' address='127.0.0.1'/>
       <image compression='off'/>
@@ -82,10 +78,6 @@ SPICE_XML = """
 """
 
 VNC_XML = """
-    <video>
-      <model type='vga' heads='1' primary='yes'/>
-      <alias name='video0'/>
-    </video>
     <graphics type='vnc' port='5900' autoport='yes' listen='127.0.0.1'>
       <listen type='address' address='127.0.0.1'/>
     </graphics>
