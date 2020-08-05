@@ -64,7 +64,7 @@ class MachinesNetworksTestSuite(MachinesLib):
 
         self.click(self.wait_css('#card-pf-networks > h2 > button',
                                  cond=clickable))
-        self.click(self.wait_css('#network-{}-system-name'.format(net_name),
+        self.click(self.wait_css('tr[data-row-id="network-{}-system"] > td > button'.format(net_name),
                                  cond=clickable))
 
         self.click(self.wait_css('#deactivate-network-{}-system'.format(net_name)))
