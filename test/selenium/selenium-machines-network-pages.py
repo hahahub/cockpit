@@ -93,7 +93,7 @@ class MachinesNetworksTestSuite(MachinesLib):
 
         self.click(self.wait_css('#card-pf-networks > h2 > button',
                                  cond=clickable))
-        self.click(self.wait_css('#network-{}-system-name'.format(net_name),
+        self.click(self.wait_css('tr[data-row-id="network-{}-system"] > td > button'.format(net_name),
                                  cond=clickable))
 
         wait(lambda: not self.wait_css('#network-{}-system-autostart-checkbox'.format(net_name)).is_selected())
@@ -114,7 +114,7 @@ class MachinesNetworksTestSuite(MachinesLib):
         self.click(self.wait_css('#card-pf-networks > h2 > button',
                                  cond=clickable))
         self.create_network(net_1, persistent=False)
-        self.click(self.wait_css('#network-{}-system-name'.format(net_1),
+        self.click(self.wait_css('tr[data-row-id="network-{}-system"] > td > button'.format(net_1),
                                  cond=clickable))
         self.assertTrue(self.wait_css('#delete-network-{}-system'.format(net_1)).get_attribute('disabled'))
         ActionChains(self.driver).move_to_element(self.wait_css('#delete-network-{}-system'.format(net_1))).perform()

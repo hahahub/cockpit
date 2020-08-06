@@ -430,7 +430,7 @@ class MachinesStoragePoolTestSuite(MachinesLib):
                                  cond=clickable))
         self.refresh_machines_page()
         # Check information about the pool and volume which is created above
-        self.click(self.wait_css('#pool-{}-system-name'.format(pool_name), cond=clickable))
+        self.click(self.wait_css('tr[data-row-id="pool-{}-system"] > td > button'.format(pool_name), cond=clickable))
         self.click(self.wait_css('#pool-{}-system-storage-volumes'.format(pool_name), cond=clickable))
         self.wait_css('#pool-{}-system-volume-{}-name'.format(pool_name, vol_name), cond=clickable)
         # Delet the volume
@@ -453,6 +453,6 @@ class MachinesStoragePoolTestSuite(MachinesLib):
 
         self.click(self.wait_css('#card-pf-storage-pools > h2 > button',
                                  cond=clickable))
-        self.click(self.wait_css('#pool-default-system-name', cond=clickable))
+        self.click(self.wait_css('tr[data-row-id="pool-default-system"] > td > button', cond=clickable))
         self.click(self.wait_css('#pool-default-system-storage-volumes', cond=clickable))
         self.wait_css('#pool-default-system-volume-cirros\.qcow2-usedby', cond=text_in, text_=name)
