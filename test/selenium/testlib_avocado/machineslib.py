@@ -371,7 +371,8 @@ class MachinesLib(SeleniumTest):
         el_id_prefix = 'pool-{}-{}'.format(name, connection)
 
         # activate the storage pool since cockpit-machines will not activate the storage pool automatically now.
-        self.click(self.wait_css('#' + el_id_prefix + '-name', cond=clickable))
+        # self.click(self.wait_css('#' + el_id_prefix + '-name', cond=clickable))
+        self.click(self.wait_css('tr[data-row-id="pool-{}-{}"] > td > button'.format(name, connection), cond=clickable))
         self.click(self.wait_css("#activate-" + el_id_prefix, cond=clickable))
 
         wait(lambda: 'inactive' not in self.wait_css('#' + el_id_prefix + '-state').text)
