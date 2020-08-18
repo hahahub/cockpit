@@ -348,12 +348,18 @@ class MachinesLib(SeleniumTest):
             self.select_by_value(self.wait_css('#storage-pool-dialog-type'), storage_type)
 
         if storage_type != 'iscsi-direct' and target_path:
-            self.send_keys(self.wait_css('label[for=storage-pool-dialog-target] + div input[type=text]'), target_path, ctrla=True)
-            self.send_keys(self.wait_css("label[for=storage-pool-dialog-target] + div input[type=text]", cond=clickable),
+            for i in target_path:
+                self.send_keys(self.wait_css('label[for=storage-pool-dialog-target] + div input[type=text]'),
+                               i, clear=False)
+            self.send_keys(self.wait_css('label[for=storage-pool-dialog-target] + div input[type=text]'),
                            Keys.ARROW_DOWN + Keys.ENTER, clear=False)
 
         if storage_type == 'disk' and source_path and parted:
-            self.send_keys(self.wait_css('label[for=storage-pool-dialog-source] + div input[type=text]'), source_path)
+            for i in source_path:
+                self.send_keys(self.wait_css('label[for=storage-pool-dialog-source] + div input[type=text]'),
+                               i, clear=False)
+            self.send_keys(self.wait_css('label[for=storage-pool-dialog-source] + div input[type=text]'),
+                           Keys.ARROW_DOWN + Keys.ENTER, clear=False)
             self.select_by_value(self.wait_css('#storage-pool-dialog-source-format', cond=clickable), parted)
 
         if storage_type in ['netfs', 'iscsi', 'iscsi-direct'] and host and source_path:
