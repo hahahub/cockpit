@@ -174,9 +174,9 @@ class MachinesBasicTestSuite(MachinesLib):
         self.click(self.wait_css('#create-new-vm', cond=clickable))
         self.select_by_value(self.wait_css('#source-type', cond=clickable),
                              'file')
-        self.send_keys(self.wait_css('label[for=os-select] + div > div > div > input', cond=clickable),
+        self.send_keys(self.wait_css('label[for=os-select] + div > div > div > div > input', cond=clickable),
                        'SUSE CaaS Platform 3.0')
-        self.send_keys(self.wait_css('label[for=os-select] + div > div > div > input', cond=clickable),
+        self.send_keys(self.wait_css('label[for=os-select] + div > div > div > div > input', cond=clickable),
                        Keys.ARROW_DOWN + Keys.ENTER,
                        clear=False)
         ActionChains(self.driver).move_to_element(self.wait_css('#memory-size-slider > div.slider-handle.min-slider-handle.round')).perform()
@@ -189,9 +189,9 @@ class MachinesBasicTestSuite(MachinesLib):
         self.click(self.wait_css('#create-new-vm', cond=clickable))
         self.select_by_value(self.wait_css('#source-type', cond=clickable),
                              'file')
-        self.send_keys(self.wait_css('label[for=os-select] + div > div > div > input', cond=clickable),
+        self.send_keys(self.wait_css('label[for=os-select] + div > div > div > div > input', cond=clickable),
                        'Pop!_OS 18.04')
-        self.send_keys(self.wait_css('label[for=os-select] + div > div > div > input', cond=clickable),
+        self.send_keys(self.wait_css('label[for=os-select] + div > div > div > div > input', cond=clickable),
                        Keys.ARROW_DOWN + Keys.ENTER,
                        clear=False)
         # can not use the same ActionChains object as there will be an error raised which is

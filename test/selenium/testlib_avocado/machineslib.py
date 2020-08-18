@@ -256,7 +256,7 @@ class MachinesLib(SeleniumTest):
                            Keys.ARROW_DOWN + Keys.ENTER, clear=False)
         elif source_type == 'disk_image':
             self.send_keys(self.wait_css('label[for=source-disk] + div input[type=text]'), source, ctrla=True)
-            self.send_keys(self.wait_css("label[for=source-file] + div input[type=text]", cond=clickable),
+            self.send_keys(self.wait_css("label[for=source-disk] + div input[type=text]", cond=clickable),
                            Keys.ARROW_DOWN + Keys.ENTER, clear=False)
         elif source_type == 'url':
             self.send_keys(self.wait_css('#source-url'), source)
