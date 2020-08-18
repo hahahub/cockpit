@@ -349,6 +349,8 @@ class MachinesLib(SeleniumTest):
 
         if storage_type != 'iscsi-direct' and target_path:
             self.send_keys(self.wait_css('label[for=storage-pool-dialog-target] + div input[type=text]'), target_path, ctrla=True)
+            self.send_keys(self.wait_css("label[for=storage-pool-dialog-target] + div input[type=text]", cond=clickable),
+                           Keys.ARROW_DOWN + Keys.ENTER, clear=False)
 
         if storage_type == 'disk' and source_path and parted:
             self.send_keys(self.wait_css('label[for=storage-pool-dialog-source] + div input[type=text]'), source_path)
