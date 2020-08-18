@@ -125,7 +125,7 @@ class MachinesBasicTestSuite(MachinesLib):
             "fails too often, https://github.com/cockpit-project/cockpit/issues/13072")
     def testCreateVMWithISO(self):
         name = 'test_iso'
-        iso_path = '/home/{}.iso'.format(name + MachinesLib.random_string())
+        iso_path = '/var/tmp/{}.iso'.format(name + MachinesLib.random_string())
         self.vm_stop_list.append(name)
 
         self.machine.execute('sudo touch {}'.format(iso_path))
@@ -160,7 +160,7 @@ class MachinesBasicTestSuite(MachinesLib):
     def testCreateVMWithExisting(self):
         name = 'test_existing_' + MachinesLib.random_string()
         base_path = '/var/lib/libvirt/images/cirros.qcow2'
-        dest_path = '/home/cirros.qcow2'
+        dest_path = '/var/tmp/cirros.qcow2'
         cmd = 'sudo test -f {base} && sudo cp {base} {dest} && sudo chmod 777 {dest}'
         self.machine.execute(cmd.format(base=base_path, dest=dest_path))
         self.vm_stop_list.append(name)
@@ -204,7 +204,7 @@ class MachinesBasicTestSuite(MachinesLib):
     def testCreateVMWithDifferentDisk(self):
         def createvm(storage_pool):
             name = 'test_' + MachinesLib.random_string()
-            iso_path = '/home/{}.iso'.format(name)
+            iso_path = '/var/tmp/{}.iso'.format(name)
             self.machine.execute('sudo touch {}'.format(iso_path))
             self.vm_stop_list.append(name)
 

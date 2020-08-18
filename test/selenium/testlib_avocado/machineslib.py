@@ -252,10 +252,16 @@ class MachinesLib(SeleniumTest):
         # According to different 'Installation Type' to input 'Installation Source'
         if source_type == 'file':
             self.send_keys(self.wait_css('label[for=source-file] + div input[type=text]'), source, ctrla=True)
+            self.send_keys(self.wait_css("label[for=source-file] + div input[type=text]", cond=clickable),
+                           Keys.ARROW_DOWN + Keys.ENTER, clear=False)
         elif source_type == 'disk_image':
             self.send_keys(self.wait_css('label[for=source-disk] + div input[type=text]'), source, ctrla=True)
+            self.send_keys(self.wait_css("label[for=source-file] + div input[type=text]", cond=clickable),
+                           Keys.ARROW_DOWN + Keys.ENTER, clear=False)
         elif source_type == 'url':
             self.send_keys(self.wait_css('#source-url'), source)
+            self.send_keys(self.wait_css("#source-url", cond=clickable),
+                           Keys.ARROW_DOWN + Keys.ENTER, clear=False)
         elif source_type == 'pxe':
             item = self.wait_css('#network-select')
             source_list = item.find_elements_by_tag_name('option')
@@ -264,8 +270,8 @@ class MachinesLib(SeleniumTest):
                     self.select_by_text(item, sl.text)
                     break
         if operating_system:
-            self.send_keys(self.wait_css("label[for=os-select] + div > div > div > input", cond=clickable), operating_system)
-            self.send_keys(self.wait_css("label[for=os-select] + div > div > div > input", cond=clickable), Keys.ARROW_DOWN + Keys.ENTER, clear=False)
+            self.send_keys(self.wait_css("label[for=os-select] + div > div > div > div > input", cond=clickable), operating_system)
+            self.send_keys(self.wait_css("label[for=os-select] + div > div > div > div > input", cond=clickable), Keys.ARROW_DOWN + Keys.ENTER, clear=False)
         # Select the type of 'Storage'
         if source_type != 'disk_image':
             self.select_by_value(self.wait_css('#storage-pool-select'),
@@ -296,7 +302,7 @@ class MachinesLib(SeleniumTest):
         # Check 'Immediately Start VM'
         self.check_box(self.wait_css('#start-vm'), immediately_start)
         # make sure the OS is be detected or input
-        wait(lambda: self.wait_css('label[for=os-select] + div > div > div > input', cond=clickable).get_attribute('value') != "")
+        wait(lambda: self.wait_css('label[for=os-select] + div > div > div > div > input', cond=clickable).get_attribute('value') != "")
         self.click(self.wait_css('#create-vm-dialog .modal-footer .pf-c-button.pf-m-primary', cond=clickable))
         # Some checks after creation
         self.wait_dialog_disappear()
