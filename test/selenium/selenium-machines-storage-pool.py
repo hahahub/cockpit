@@ -244,8 +244,7 @@ class MachinesStoragePoolTestSuite(MachinesLib):
 
         # Create the pool whose state is inactive, then delete it
         el_id_prefix = self.create_storage(name, path)
-        self.click(
-            self.wait_css('#{}-name'.format(el_id_prefix), cond=clickable))
+        self.click(self.wait_css('tr[data-row-id="{}"] > td > button'.format(el_id_prefix), cond=clickable))
         self.click(
             self.wait_css('#delete-{}'.format(el_id_prefix), cond=clickable))
         self.click(
