@@ -353,6 +353,7 @@ class MachinesLib(SeleniumTest):
                                i, clear=False)
             self.send_keys(self.wait_css('label[for=storage-pool-dialog-target] + div input[type=text]'),
                            Keys.ARROW_DOWN + Keys.ENTER, clear=False)
+            self.click(self.wait_css('button.pf-c-button.pf-c-select__toggle-button.pf-m-plain', cond=clickable))
 
         if storage_type == 'disk' and source_path and parted:
             for i in source_path:
