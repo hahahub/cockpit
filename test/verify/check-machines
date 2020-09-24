@@ -1424,6 +1424,9 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
                                                       os_name=config.FEDORA_28,
                                                       start_vm=False))
 
+        # Check OS input will detect the OS correctly when there is already an OS input
+        runner.checkOsDetect(TestMachines.VmDialog(self))
+
         # check if older os are filtered
         runner.checkFilteredOsTest(TestMachines.VmDialog(self, os_name=config.REDHAT_RHEL_4_7_FILTERED_OS))
 
@@ -1975,6 +1978,20 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
 
             return self
 
+        def checkOsDetect(self):
+            b = self.browser
+
+            b.select_from_dropdown("#source-type", "URL")
+
+            b.set_input_text("label[for=\"os-select\"] + div input", self.os_name)
+            b.click("#os-select li:contains({}) button".format(self.os_name))
+
+            b.set_input_text("#source-url", TestMachines.TestCreateConfig.TREE_URL)
+            b.wait_attr("label[for=\"os-select\"] + div input", "value", "Fedora 28")
+            b.wait_not_present("#navbar-oops")
+
+            return self
+
         def checkOsFiltered(self):
             b = self.browser
 
@@ -2473,6 +2490,11 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
             b.wait_not_present(".toast-notifications-list-pf div.pf-c-alert")
 
             return self
+
+        def checkOsDetect(self, dialog):
+            dialog.open().checkOsDetect().cancel(True)
+
+            self._assertScriptFinished().checkEnvIsEmpty()
 
         # Many of testCreate* tests use these helpers - let's keep them here to avoid repetition
         def checkDialogFormValidationTest(self, dialog, errors):
