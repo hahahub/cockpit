@@ -2601,6 +2601,11 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
         # Open dialog
         b.click("#vm-subVmTest1-boot-order")
         b.wait_present("#vm-subVmTest1-order-modal-window")
+        # Check some details of boot options
+        b.wait_in_text("#vm-subVmTest1-order-modal-device-row-0 div.list-view-pf-main-info span",
+                       m.execute("virsh domblklist subVmTest1 | awk 'NR>=3{print $2}'").strip())
+        b.wait_in_text("#vm-subVmTest1-order-modal-device-row-1 div.list-view-pf-main-info span",
+                       m.execute("virsh domiflist subVmTest1 | awk 'NR>2{print $5}'").strip())
         # Make sure the footer warning does not appear
         b.wait_not_present("#vm-subVmTest1-order-modal-min-message")
         # Move first device down and check whetever succeeded
