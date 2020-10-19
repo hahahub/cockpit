@@ -2624,7 +2624,7 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
         b.wait_present("#vm-subVmTest1-order-modal-window")
         # Make sure the footer warning does not appear
         b.wait_not_present("#vm-subVmTest1-order-modal-min-message")
-        # Move first device down and check whetever succeeded
+        # Move first device down and check whether succeeded
         row = b.text("#vm-subVmTest1-order-modal-device-row-1 .list-view-pf-additional-info")
         b.click("#vm-subVmTest1-order-modal-device-row-0 #vm-subVmTest1-order-modal-down")
         b.wait_in_text("#vm-subVmTest1-order-modal-device-row-0 .list-view-pf-additional-info", row)
@@ -2665,6 +2665,39 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
         # Check boot order has changed and no warning is shown
         b.wait_not_in_text("#vm-subVmTest1-boot-order", bootOrder)
         b.wait_not_present("#boot-order-tooltip")
+
+        # Uncheck the last boot option
+        def UncheckTheLastBootOption(vm_name, vm_state, current_boot="disk"):
+            b.click("#vm-{}-boot-order".format(vm_name))
+            b.wait_present("#vm-{}-order-modal-window".format(vm_name))
+
+            b.click("#vm-{}-order-modal-device-row-0-checkbox".format(vm_name))
+            if vm_state == "running":
+                b.wait_present("#vm-{}-order-modal-min-message".format(vm_name))
+            else:
+                b.wait_not_present("#vm-{}-order-modal-min-message".format(vm_name))
+
+            b.click("#vm-{}-order-modal-save".format(vm_name))
+            b.wait_not_present("#vm-{}-order-modal-window".format(vm_name))
+            if current_boot != "disk" and vm_state == "running":
+                b.wait_present("#boot-order-tooltip")
+            else:
+                # No tooltip when unchecking the last boot option whose value is "disk" of a running VM
+                b.wait_not_present("#boot-order-tooltip")
+            if vm_state == "running":
+                b.wait_in_text("#vm-{}-boot-order".format(vm_name), current_boot)
+                b.click("#vm-{}-action-kebab button".format(vm_name))
+                b.click("#vm-{}-forceOff".format(vm_name))
+                b.wait_in_text("#vm-{}-state".format(vm_name), "shut off")
+            # Always disk after unckecking the last boot option
+            b.wait_in_text("#vm-{}-boot-order".format(vm_name), "disk")
+
+        UncheckTheLastBootOption("subVmTest1", "shut off", "network")
+
+        b.click("#vm-subVmTest1-run")
+        b.wait_in_text("#vm-subVmTest1-state", "running")
+
+        UncheckTheLastBootOption("subVmTest1", "running")
 
         # Run VM
         b.click("#vm-subVmTest1-run")
