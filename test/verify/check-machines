@@ -607,26 +607,20 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
 
         # Test domstats
         self.wait_for_disk_stats("subVmTest1", "vda")
-        if b.is_present("#vm-subVmTest1-disks-vda-used"):
-            b.wait_in_text("#vm-subVmTest1-disks-vda-used", "0.0")
+        b.wait_in_text("#vm-subVmTest1-disks-vda-used", "0.0")
 
         # Test add disk by external action
         m.execute("qemu-img create -f raw /var/lib/libvirt/images/image3.img 128M")
         # attach to the virtio bus instead of ide
         m.execute("virsh attach-disk subVmTest1 /var/lib/libvirt/images/image3.img vdc")
 
-        b.wait_present("#vm-subVmTest1-disks-vda-used")
-
-        b.wait_in_text("#vm-subVmTest1-disks-vda-bus", "virtio")
-
         b.wait_in_text("#vm-subVmTest1-disks-vdc-bus", "virtio")
         b.wait_in_text("#vm-subVmTest1-disks-vdc-device", "disk")
         b.wait_in_text("#vm-subVmTest1-disks-vdc-source-file", "/var/lib/libvirt/images/image3.img")
 
         self.wait_for_disk_stats("subVmTest1", "vdc")
-        if b.is_present("#vm-subVmTest1-disks-vdc-used"):
-            b.wait_in_text("#vm-subVmTest1-disks-vdc-used", "0.00")
-            b.wait_in_text("#vm-subVmTest1-disks-vdc-capacity", "0.13") # 128 MB
+        b.wait_in_text("#vm-subVmTest1-disks-vdc-used", "0.00")
+        b.wait_in_text("#vm-subVmTest1-disks-vdc-capacity", "0.13") # 128 MB
 
         # Test remove disk - by external action
         m.execute("virsh detach-disk subVmTest1 vdc")
