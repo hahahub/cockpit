@@ -600,11 +600,8 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
 
         # Test basic disk properties
         b.wait_in_text("#vm-subVmTest1-disks-vda-bus", "virtio")
-
         b.wait_in_text("#vm-subVmTest1-disks-vda-device", "disk")
-
         b.wait_in_text("#vm-subVmTest1-disks-vda-source-file", "/var/lib/libvirt/images/subVmTest1-2.img")
-
         # Test domstats
         self.wait_for_disk_stats("subVmTest1", "vda")
         b.wait_in_text("#vm-subVmTest1-disks-vda-used", "0.0")
@@ -617,7 +614,6 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
         b.wait_in_text("#vm-subVmTest1-disks-vdc-bus", "virtio")
         b.wait_in_text("#vm-subVmTest1-disks-vdc-device", "disk")
         b.wait_in_text("#vm-subVmTest1-disks-vdc-source-file", "/var/lib/libvirt/images/image3.img")
-
         self.wait_for_disk_stats("subVmTest1", "vdc")
         b.wait_in_text("#vm-subVmTest1-disks-vdc-used", "0.00")
         b.wait_in_text("#vm-subVmTest1-disks-vdc-capacity", "0.13") # 128 MB
