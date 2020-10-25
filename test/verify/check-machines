@@ -3008,6 +3008,15 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
         b.wait_in_text("#vm-subVmTest1-disks-vde-access", "Writeable and shared")
         b.wait_not_present("#vm-subVmTest1-disks-vde-access-tooltip")
 
+        # Configure for the qcow2 disk
+        b.click("#vm-subVmTest1-disks-vdg-edit")
+        b.wait_present("#vm-subVmTest1-disks-vdg-edit-dialog")
+        b.set_checked("#vm-subVmTest1-disks-vdg-edit-readonly", True)
+        b.wait_not_present("#vm-subVmTest1-disks-vdg-edit-idle-message")
+        b.click("#vm-subVmTest1-disks-vdg-edit-dialog-save")
+        b.wait_not_present("#vm-subVmTest1-disks-vdg-access-tooltip")
+        b.wait_in_text("#vm-subVmTest1-disks-vdg-access", "Read-only")
+
         b.wait_in_text("#vm-subVmTest1-disks-vde-bus", "virtio")
         # Change bus type to scsi
         b.click("#vm-subVmTest1-disks-vde-edit")
