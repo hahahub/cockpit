@@ -734,6 +734,9 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
             m = self.test_obj.machine
             b.wait_in_text("#vm-{0}-disks-{1}-bus".format(self.vm_name, self.expected_target), self.bus_type)
             b.wait_in_text("#vm-{0}-disks-{1}-device".format(self.vm_name, self.expected_target), "disk")
+            # Check 'Used' and 'Capacity' is not null
+            wait(lambda: b.text("#vm-{0}-disks-{1}-used".format(self.vm_name, self.expected_target)))
+            wait(lambda: b.text("#vm-{0}-disks-{1}-capacity".format(self.vm_name, self.expected_target)))
 
             # Check volume was added to pool's volume list
             if not self.use_existing_volume:
