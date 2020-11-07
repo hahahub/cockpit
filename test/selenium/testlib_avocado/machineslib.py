@@ -114,7 +114,7 @@ class MachinesLib(SeleniumTest):
     :avocado: disable
     """
 
-    def create_vm(self, name, graphics='spice', ptyconsole=False, state='running', wait=False):
+    def create_vm(self, name, graphics='spice', ptyconsole=False, state='Running', wait=False):
         self.virshvm = name
 
         img = "{}/cirros.qcow2".format(SYS_POOL_PATH)
@@ -151,17 +151,24 @@ class MachinesLib(SeleniumTest):
 
         xml = DOMAIN_XML.format(**args)
         self.machine.execute('sudo echo \"{}\" > /tmp/xml && sudo virsh define /tmp/xml'.format(xml))
-        if state == 'running':
+        if state == 'Running':
             self.machine.execute('sudo virsh start {}'.format(name))
             if wait:
                 self.wait_vm_complete_start(args)
-        elif state == 'shut off':
+        elif state == 'Shut off':
             pass
 
         self.wait_css('#vm-{}-state'.format(name), cond=text_in, text_=state)
-        self.click(self.wait_css("tr[data-row-id='vm-{}-system'] > td > button".format(name), cond=clickable))
 
         return args
+
+    def goToVMPage(self, vm_name, connection="system"):
+        self.click(self.wait_css("#vm-{}-{}-name".format(vm_name, connection), cond=clickable))
+        self.wait_css("div.vm-top-panel")
+
+    def goToMainPage(self):
+        self.click(self.wait_css("#vm-details a.pf-c-breadcrumb__link", cond=clickable))
+        self.wait_css("#virtual-machines-listing")
 
     def wait_vm_complete_start(self, vmargs):
         log_file = vmargs.get('logfile')
@@ -241,27 +248,33 @@ class MachinesLib(SeleniumTest):
         else:
             self.click(self.wait_css('#create-new-vm', cond=clickable))
         self.wait_css('#create-vm-dialog')
+
         # switch connection
         if connection == 'session':
             self.click(self.wait_css("#connection label:last-of-type", cond=clickable))
+
         # input the name of the VM
         self.send_keys(self.wait_css('#vm-name'), name)
+
         # choose 'Installation Type'
         if source_type != 'disk_image':
             self.select_by_value(self.wait_css('#source-type'), source_type)
+
         # According to different 'Installation Type' to input 'Installation Source'
-        if source_type == 'file':
-            self.send_keys(self.wait_css('label[for=source-file] + div input[type=text]'), source, ctrla=True)
-            self.send_keys(self.wait_css("label[for=source-file] + div input[type=text]", cond=clickable),
-                           Keys.ARROW_DOWN + Keys.ENTER, clear=False)
-        elif source_type == 'disk_image':
-            self.send_keys(self.wait_css('label[for=source-disk] + div input[type=text]'), source, ctrla=True)
-            self.send_keys(self.wait_css("label[for=source-disk] + div input[type=text]", cond=clickable),
-                           Keys.ARROW_DOWN + Keys.ENTER, clear=False)
+        if source_type in ['file', 'disk_image']:
+            # sleep here as maybe the source can not be searched in the shown list if sending keys too fast
+            sleep(1)
+            self.click(self.wait_css('label[for=source-{}] + div button'.format("file" if source_type == 'file' else "disk"),
+                                     cond=clickable))
+            self.wait_css("#source-{}".format("file" if source_type == 'file' else "disk"))
+
+            self.send_keys(self.wait_css('label[for=source-{}] + div input'.format("file" if source_type == 'file' else "disk")),
+                           source)
+            self.click(self.wait_text(source,
+                                      element="button",
+                                      cond=clickable))
         elif source_type == 'url':
             self.send_keys(self.wait_css('#source-url'), source)
-            self.send_keys(self.wait_css("#source-url", cond=clickable),
-                           Keys.ARROW_DOWN + Keys.ENTER, clear=False)
         elif source_type == 'pxe':
             item = self.wait_css('#network-select')
             source_list = item.find_elements_by_tag_name('option')
@@ -269,9 +282,21 @@ class MachinesLib(SeleniumTest):
                 if re.match('^(.*)' + source + '(.*)$', sl.text):
                     self.select_by_text(item, sl.text)
                     break
+
         if operating_system:
-            self.send_keys(self.wait_css("label[for=os-select] + div > div > div > div > input", cond=clickable), operating_system)
-            self.send_keys(self.wait_css("label[for=os-select] + div > div > div > div > input", cond=clickable), Keys.ARROW_DOWN + Keys.ENTER, clear=False)
+            self.click(self.wait_css('label[for="os-select"] + div button',
+                                     cond=clickable))
+            self.wait_css("#os-select")
+
+            self.send_keys(self.wait_css('label[for="os-select"] + div input'),
+                           operating_system)
+            self.click(self.wait_text(operating_system,
+                                      element="button",
+                                      cond=clickable))
+        else:
+            # make sure the OS is be detected or input
+            wait(lambda: self.wait_css('label[for=os-select] + div input', cond=clickable).get_attribute('value') != "")
+
         # Select the type of 'Storage'
         if source_type != 'disk_image':
             self.select_by_value(self.wait_css('#storage-pool-select'),
@@ -283,12 +308,14 @@ class MachinesLib(SeleniumTest):
         self.send_keys(self.wait_css('#memory-size'),
                        mem,
                        ctrla=True)
+
         # Select volume if the type of storage_pool is not 'NewVolume' and 'NoStorage'
         # and volume_name is not None
         if storage_pool not in ['NewVolume', 'NoStorage'] and volume_name:
             self.select_by_value(self.wait_css('#storage-volume-select',
                                                cond=clickable),
                                  volume_name)
+
         # Set storage size if the VM is not created from importing
         # and the type of storage_pool is not 'NewVolume'
         if source_type != 'disk_image' and storage_pool == 'NewVolume':
@@ -299,14 +326,16 @@ class MachinesLib(SeleniumTest):
                            storage,
                            clear=False,
                            ctrla=True)
+
         # Check 'Immediately Start VM'
         self.check_box(self.wait_css('#start-vm'), immediately_start)
-        # make sure the OS is be detected or input
-        wait(lambda: self.wait_css('label[for=os-select] + div > div > div > div > input', cond=clickable).get_attribute('value') != "")
-        self.click(self.wait_css('#create-vm-dialog .modal-footer .pf-c-button.pf-m-primary', cond=clickable))
+
+        self.click(self.wait_css('#create-vm-dialog  button.pf-c-button.pf-m-primary.pf-m-progress', cond=clickable))
+
         # Some checks after creation
         self.wait_dialog_disappear()
         self.wait_css('#create-vm-dialog', cond=invisible)
+
         # Record the reason of the failed
         if not self.wait_css('#app > div > section > div > div',
                              cond=invisible,
@@ -314,6 +343,7 @@ class MachinesLib(SeleniumTest):
                              fatal=False):
             self.click(self.wait_text("show more"))
             raise SeleniumElementFailure(self.wait_css('#app > div > section > div > div > p').text)
+
         self.wait_css('#vm-{}-state'.format(name))
 
     def create_storage(self, name, path, active=False):
@@ -490,7 +520,9 @@ class MachinesLib(SeleniumTest):
         if user_group == 'wheel' and not privilege:
             self.mainframe()
             self.click(self.wait_css("#super-user-indicator button", cond=clickable))
-            self.click(self.wait_css("body > div:nth-child(4) > div.in.modal > div > div > div.modal-footer > button.pf-c-button.pf-m-primary", cond=clickable))
+            self.wait_css("div.pf-c-modal-box.pf-m-align-top.pf-m-md")
+            self.click(self.wait_css("div.pf-c-modal-box.pf-m-align-top.pf-m-md button.pf-c-button.pf-m-primary",
+                                     cond=clickable))
             self.wait_frame("machines")
 
         # if operations is set false, just do some checks
@@ -499,18 +531,18 @@ class MachinesLib(SeleniumTest):
                 self.wait_css('#virtual-machines-listing tr td').text.strip(),
                 'No VM is running or defined on this host')
             self.assertEqual(
-                self.wait_css('#app div:nth-child(1) .card-pf-aggregate-status-count').text,
-                '0')
+                self.wait_css('#card-pf-storage-pools span.card-pf-title-link').text,
+                '0 Storage pools')
             self.assertEqual(
-                self.wait_css('#app div:nth-child(2) .card-pf-aggregate-status-count').text,
-                '0')
+                self.wait_css('#card-pf-networks span.card-pf-title-link').text,
+                '0 Networks')
         # if operations is set true, do some VM operations
         else:
             vm_name = vm_args['name']
             log_file = vm_args['logfile']
 
             # After re-login, extend the vm-row is needed
-            self.click(self.wait_css("tr[data-row-id='vm-{}-system'] > td > button".format(vm_name), cond=clickable))
+            self.goToVMPage(vm_name)
 
             self.check_vm_info(vm_name)
             self.check_vm_pause_and_resume(vm_name)
@@ -522,92 +554,60 @@ class MachinesLib(SeleniumTest):
             self.check_vm_force_off(vm_name)
 
     def check_vm_info(self, vm_name):
-        self.wait_css('#vm-{}-state'.format(vm_name))
-
         self.wait_css('#vm-{}-memory-count'.format(vm_name), cond=text_in, text_='64 MiB')
         self.wait_css('#vm-{}-vcpus-count'.format(vm_name), cond=text_in, text_='1')
-        self.wait_css('#vm-{}-cpu-model'.format(vm_name), cond=text_in, text_='custom')
-        self.wait_css('#vm-{}-emulated-machine'.format(vm_name), cond=text_in, text_='pc')
         self.wait_css('#vm-{}-boot-order'.format(vm_name), cond=text_in, text_='disk,network')
 
     def check_vm_pause_and_resume(self, vm_name):
-        self.wait_css('#vm-{}-state'.format(vm_name))
-
         self.click(self.wait_css('#vm-{}-action-kebab button'.format(vm_name),
                                  cond=clickable))
-        self.wait_css('ul.pf-c-dropdown__menu.pf-m-align-right')
         self.click(self.wait_css('#vm-{}-pause'.format(vm_name), cond=clickable))
-        self.assertEqual(self.wait_css('#vm-{}-state'.format(vm_name)).text, 'paused')
+        wait(lambda: self.wait_css('#vm-{}-state'.format(vm_name)).text == 'Paused')
 
         self.click(self.wait_css('#vm-{}-action-kebab button'.format(vm_name),
                                  cond=clickable))
-        self.wait_css('ul.pf-c-dropdown__menu.pf-m-align-right')
         self.click(self.wait_css('#vm-{}-resume'.format(vm_name), cond=clickable))
-        self.assertEqual(self.wait_css('#vm-{}-state'.format(vm_name)).text, 'running')
+        wait(lambda: self.wait_css('#vm-{}-state'.format(vm_name)).text == 'Running')
 
     def check_vm_reboot(self, vm_name, log_file):
-        self.wait_css('#vm-{}-state'.format(vm_name))
-
-        wait(lambda: 'cirros login:' in self.machine.execute(
-            "sudo tail -n 1 {}".format(log_file)) or re.search(
-            'cirros login:.*NMI received',
-            self.machine.execute("sudo tail -n 3 {}".format(log_file))), delay=5)
+        wait(lambda: 'cirros login:' in self.machine.execute("sudo tail -n 3 {}".format(log_file)))
+        self.machine.execute("sudo su -c \"echo > {}\"".format(log_file))
 
         self.click(self.wait_css('#vm-{}-action-kebab button'.format(vm_name),
                                  cond=clickable))
-        self.wait_css('ul.pf-c-dropdown__menu.pf-m-align-right')
         self.click(self.wait_css('#vm-{}-reboot'.format(vm_name), cond=clickable))
         wait(lambda: "reboot: Power down" in self.machine.execute("sudo cat {}".format(log_file)))
 
     def check_vm_force_reboot(self, vm_name, log_file):
-        self.wait_css('#vm-{}-state'.format(vm_name))
-
-        self.machine.execute('sudo sh -c "echo > {}"'.format(log_file))
-
         self.click(self.wait_css('#vm-{}-action-kebab button'.format(vm_name), cond=clickable))
-        self.wait_css('ul.pf-c-dropdown__menu.pf-m-align-right')
         self.click(self.wait_css('#vm-{}-forceReboot'.format(vm_name), cond=clickable))
+        self.machine.execute("sudo su -c \"echo > {}\"".format(log_file))
         wait(lambda: 'Initializing cgroup subsys cpuset' in self.machine.execute('sudo cat {}'.format(log_file)))
 
     def check_vm_force_off(self, vm_name):
-        self.wait_css('#vm-{}-state'.format(vm_name))
-
         self.click(self.wait_css('#vm-{}-action-kebab button'.format(vm_name),
                                  cond=clickable))
-        self.wait_css('ul.pf-c-dropdown__menu.pf-m-align-right')
         self.click(self.wait_css('#vm-{}-forceOff'.format(vm_name), cond=clickable))
         self.wait_css('#vm-{}-shutdown-button'.format(vm_name), cond=invisible)
         self.wait_css('#vm-{}-run'.format(vm_name))
 
     def check_send_NMI_to_vm(self, vm_name, log_file):
-        self.wait_css('#vm-{}-state'.format(vm_name))
-
-        wait(lambda: 'cirros login:' in self.machine.execute(
-            "sudo tail -n 1 {}".format(log_file)) or re.search(
-            'cirros login:.*NMI received',
-            self.machine.execute("sudo tail -n 3 {}".format(log_file))))
+        wait(lambda: 'cirros login:' in self.machine.execute("sudo tail -n 3 {}".format(log_file)))
 
         self.click(self.wait_css('#vm-{}-action-kebab button'.format(vm_name),
                                  cond=clickable))
-        self.wait_css('ul.pf-c-dropdown__menu.pf-m-align-right')
-        self.click(self.wait_css('#vm-{}-sendNMI'.format(vm_name), cond=clickable))
-        wait(lambda: "NMI received" in self.machine.execute("sudo cat {}".format(log_file)))
+        self.click(self.wait_css('#vm-{}-sendNMI'.format(vm_name),
+                                 cond=clickable))
+        wait(lambda: "NMI received" in self.machine.execute("sudo tail -n 3 {}".format(log_file)))
 
     def check_vm_off(self, vm_name, log_file):
-        self.wait_css('#vm-{}-state'.format(vm_name))
-
-        wait(lambda: 'cirros login:' in self.machine.execute(
-            "sudo tail -n 1 {}".format(log_file)) or re.search(
-            'cirros login:.*NMI received',
-            self.machine.execute("sudo tail -n 3 {}".format(log_file))))
+        wait(lambda: 'cirros login:' in self.machine.execute("sudo tail -n 3 {}".format(log_file)))
 
         self.click(self.wait_css('#vm-{}-shutdown-button'.format(vm_name), cond=clickable))
         self.wait_css('#vm-{}-shutdown-button'.format(vm_name), cond=invisible)
         self.wait_css('#vm-{}-run'.format(vm_name))
 
     def check_vm_run(self, vm_name):
-        self.wait_css('#vm-{}-state'.format(vm_name))
-
         self.click(self.wait_css('#vm-{}-run'.format(vm_name), cond=clickable))
         self.wait_css('#vm-{}-run'.format(vm_name), cond=invisible)
         self.wait_css('#vm-{}-shutdown-button'.format(vm_name))
@@ -637,7 +637,7 @@ class MachinesLib(SeleniumTest):
         return pool, pool_a, pool_b
 
     def get_pdd_format_list(self):
-        self.click(self.wait_css('#card-pf-storage-pools > h2 > button',
+        self.click(self.wait_css('#card-pf-storage-pools button',
                                  cond=clickable))
         self.wait_css('#storage-pools-listing')
         self.click(self.wait_css('#create-storage-pool', cond=clickable))

@@ -407,15 +407,12 @@ parameters:
             self.get_debug_logs()
             raise SeleniumDriverFailure('Unable to return to main web context ({})'.format(e))
 
-    def login(self, tmpuser=user, tmppasswd=passwd, wait_hostapp=True, add_ssh_key=True, authorized=True):
+    def login(self, tmpuser=user, tmppasswd=passwd, wait_hostapp=True):
         self.send_keys(self.wait_id('login-user-input'), tmpuser)
         self.send_keys(self.wait_id('login-password-input'), tmppasswd)
-        self.check_box(self.wait_id('authorized-input'), authorized)
         self.click(self.wait_id("login-button", cond=clickable))
         if wait_hostapp:
             self.wait_id("host-apps")
-        # if add_ssh_key and not self.check_machine_execute():
-        #     self.add_authorised_ssh_key_to_user()
 
     def add_authorised_ssh_key_to_user(self, pub_key=None):
         if pub_key is None:

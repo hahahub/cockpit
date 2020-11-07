@@ -6,7 +6,6 @@ from testlib_avocado.libdisc import Disc
 from testlib_avocado.machineslib import MachinesLib
 from testlib_avocado.seleniumlib import clickable, invisible, text_in
 from selenium.webdriver.common.keys import Keys
-import time
 
 
 class MachinesStoragePoolTestSuite(MachinesLib):
@@ -16,36 +15,30 @@ class MachinesStoragePoolTestSuite(MachinesLib):
     """
 
     def testCheckStoragePool(self):
-        self.wait_css('#card-pf-storage-pools')
         cmd_active = int(self.machine.execute('virsh pool-list | awk \'NR>=3{if($0!="")print}\' | wc -l')) + int(
             self.machine.execute('sudo virsh pool-list | awk \'NR>=3{if($0!="")print}\' | wc -l'))
-        self.wait_css('#card-pf-storage-pools > div > p > span:nth-child(1)', cond=text_in, text_=str(cmd_active))
+        self.wait_css('#card-pf-storage-pools div.active-resources:nth-child(1)', cond=text_in, text_=str(cmd_active))
 
-        active = int(self.wait_css(
-            '#card-pf-storage-pools > div > p > span:nth-child(1)').text)
-        inactive = int(self.wait_css(
-            '#card-pf-storage-pools > div > p > span:nth-child(2)').text)
-        total = int(self.wait_css(
-            '#card-pf-storage-pools > h2 > button > span.card-pf-aggregate-status-count').text)
+        active = int(self.wait_css('#card-pf-storage-pools div.active-resources:nth-child(1)').text)
+        inactive = int(self.wait_css('#card-pf-storage-pools div.active-resources:nth-child(3)').text)
+        total = int(self.wait_css('#card-pf-storage-pools span.card-pf-title-link').text.split(" ")[0])
+
         self.assertEqual(total, active + inactive,
                          "Storage pools' total num is not the same as the sum of active and inactive")
 
-        self.click(self.wait_css('#card-pf-storage-pools > h2 > button',
+        self.click(self.wait_css('#card-pf-storage-pools button',
                                  cond=clickable))
         self.wait_css('#storage-pools-listing')
 
         # iterate groups elements
         page_active = 0
         page_inactive = 0
-        group = self.driver.find_elements_by_css_selector(
-            '#storage-pools-listing table tbody')
+        group = self.driver.find_elements_by_css_selector('#storage-pools-listing table tbody')
         self.assertEqual(len(group), total)
         for el in group:
-            if el.find_element_by_css_selector(
-                    'tr > td > span').text == 'active':
+            if el.find_element_by_css_selector('tr > td > span').text == 'active':
                 page_active += 1
-            elif el.find_element_by_css_selector(
-                    'tr > td > span').text == 'inactive':
+            elif el.find_element_by_css_selector('tr > td > span').text == 'inactive':
                 page_inactive += 1
 
         cmd_total = int(self.machine.execute('virsh pool-list --all | wc -l')) - 3 + int(self.machine.execute('sudo virsh pool-list --all | wc -l')) - 3
@@ -60,7 +53,7 @@ class MachinesStoragePoolTestSuite(MachinesLib):
         path = '/home/test_' + MachinesLib.random_string()
         self.machine.execute('sudo mkdir -p {}'.format(path))
 
-        self.click(self.wait_css('#card-pf-storage-pools > h2 > button',
+        self.click(self.wait_css('#card-pf-storage-pools button',
                                  cond=clickable))
         self.wait_css('#storage-pools-listing')
 
@@ -95,7 +88,7 @@ class MachinesStoragePoolTestSuite(MachinesLib):
         self.storage_pool['pool'] = name
         self.machine.execute('sudo mkdir -p {}'.format(path))
 
-        self.click(self.wait_css('#card-pf-storage-pools > h2 > button',
+        self.click(self.wait_css('#card-pf-storage-pools button',
                                  cond=clickable))
         self.wait_css('#storage-pools-listing')
 
@@ -106,8 +99,11 @@ class MachinesStoragePoolTestSuite(MachinesLib):
                                               source_path='/home/nfs',
                                               start_up=False)
 
-        time.sleep(1)
-        page_res = self.wait_css('tr[data-row-id="' + pool_name + '"] > td:nth-child(3) > div > div + div > span').text.split('/')
+        self.wait_css('tr[data-row-id="{}"] div.pf-c-progress__status span.pf-c-progress__measure'.format(pool_name),
+                      reversed_cond=True,
+                      cond=text_in,
+                      text_="0 / 0 GiB")
+        page_res = self.wait_css('tr[data-row-id="{}"] div.pf-c-progress__status span.pf-c-progress__measure'.format(pool_name)).text.split('/')
         allocation_from_page = float(page_res[0].strip())
         capacity_from_page = float(page_res[1].split(' ')[1])
         cmd_res = self.machine.execute(
@@ -147,18 +143,16 @@ class MachinesStoragePoolTestSuite(MachinesLib):
                                                   source_path=device,
                                                   parted=part)
             self.click(self.wait_css('#delete-{}'.format(pool_name), cond=clickable))
-            # sleep 1s to wait for the delate confirm dialog to fully load,otherwise it will fail
-            time.sleep(1)
+            self.wait_css("div.pf-c-modal-box.pf-m-align-top.pf-m-md")
             self.click(
-                self.wait_xpath(
-                    '/html/body/div[2]/div[2]/div/div/div[3]/button[1]',
-                    cond=clickable))
+                self.wait_css('div.pf-c-modal-box.pf-m-align-top.pf-m-md button.pf-c-button.pf-m-danger',
+                              cond=clickable))
             self.wait_css('#{}-name', cond=invisible)
 
         pdd.clear()
 
     def testAddISCSIStoragePool(self):
-        self.click(self.wait_css('#card-pf-storage-pools > h2 > button',
+        self.click(self.wait_css('#card-pf-storage-pools button',
                                  cond=clickable))
         self.wait_css('#storage-pools-listing')
 
@@ -181,7 +175,7 @@ class MachinesStoragePoolTestSuite(MachinesLib):
         path = '/home/' + name
 
         self.machine.execute('sudo mkdir -p {}'.format(path))
-        self.click(self.wait_css('#card-pf-storage-pools > h2 > button',
+        self.click(self.wait_css('#card-pf-storage-pools button',
                                  cond=clickable))
         self.wait_css('#storage-pools-listing')
 
@@ -210,7 +204,7 @@ class MachinesStoragePoolTestSuite(MachinesLib):
         path = '/home/' + name
         vol_name = 'test_vol_' + MachinesLib.random_string()
         self.machine.execute('sudo mkdir -p {}'.format(path))
-        self.click(self.wait_css('#card-pf-storage-pools > h2 > button',
+        self.click(self.wait_css('#card-pf-storage-pools button',
                                  cond=clickable))
         self.wait_css('#storage-pools-listing')
 
@@ -221,9 +215,9 @@ class MachinesStoragePoolTestSuite(MachinesLib):
             'sudo virsh vol-create-as {} {} 10M'.format(name, vol_name))
         self.click(
             self.wait_css('#delete-{}'.format(el_id_prefix), cond=clickable))
-        self.click(
-            self.wait_xpath('/html/body/div[2]/div[2]/div/div/div[3]/button[1]',
-                            cond=clickable))
+        self.wait_css("div.pf-c-modal-box.pf-m-align-top.pf-m-md")
+        self.click(self.wait_css('div.pf-c-modal-box.pf-m-align-top.pf-m-md button.pf-c-button.pf-m-danger',
+                                 cond=clickable))
         self.wait_css('#{}-name'.format(el_id_prefix), cond=invisible)
         self.machine.execute('sudo test -f {}/{}'.format(path, vol_name))
 
@@ -234,9 +228,9 @@ class MachinesStoragePoolTestSuite(MachinesLib):
             '#delete-{}'.format(el_id_prefix), cond=clickable))
         # make sure the checkbox can be checked
         self.check_box(self.wait_css('#storage-pool-delete-volumes'))
-        self.click(
-            self.wait_xpath('/html/body/div[2]/div[2]/div/div/div[3]/button[1]',
-                            cond=clickable))
+        self.wait_css("div.pf-c-modal-box.pf-m-align-top.pf-m-md")
+        self.click(self.wait_css('div.pf-c-modal-box.pf-m-align-top.pf-m-md button.pf-c-button.pf-m-danger',
+                                 cond=clickable))
         self.wait_dialog_disappear()
         self.wait_css('#{}-name'.format(el_id_prefix), cond=invisible)
         self.machine.execute(
@@ -247,9 +241,9 @@ class MachinesStoragePoolTestSuite(MachinesLib):
         self.click(self.wait_css('tr[data-row-id="{}"] > td > button'.format(el_id_prefix), cond=clickable))
         self.click(
             self.wait_css('#delete-{}'.format(el_id_prefix), cond=clickable))
-        self.click(
-            self.wait_xpath('/html/body/div[2]/div[2]/div/div/div[3]/button[1]',
-                            cond=clickable))
+        self.wait_css("div.pf-c-modal-box.pf-m-align-top.pf-m-md")
+        self.click(self.wait_css('div.pf-c-modal-box.pf-m-align-top.pf-m-md button.pf-c-button.pf-m-danger',
+                                 cond=clickable))
         self.wait_css('#{}-name'.format(el_id_prefix), cond=invisible)
 
     @skipIf(os.environ.get('NFS') is None,
@@ -261,7 +255,7 @@ class MachinesStoragePoolTestSuite(MachinesLib):
         path = '/home/' + name
         self.machine.execute('sudo mkdir -p {}'.format(path))
 
-        self.click(self.wait_css('#card-pf-storage-pools > h2 > button',
+        self.click(self.wait_css('#card-pf-storage-pools button',
                                  cond=clickable))
         el_prefix_id = self.create_storage_by_ui(name=name,
                                                  target_path=path,
@@ -274,9 +268,9 @@ class MachinesStoragePoolTestSuite(MachinesLib):
 
         self.machine.execute('sudo virsh vol-create-as {} {} 100M --format qcow2'.format(name, vol_name))
         self.click(self.wait_css('#delete-{}'.format(el_prefix_id), cond=clickable))
-        self.click(self.wait_css(
-            'body > div:nth-child(2) > div.fade.in.modal > div > div > div.modal-footer > button.pf-c-button.pf-m-danger',
-            cond=clickable))
+        self.wait_css("div.pf-c-modal-box.pf-m-align-top.pf-m-md")
+        self.click(self.wait_css('div.pf-c-modal-box.pf-m-align-top.pf-m-md button.pf-c-button.pf-m-danger',
+                                 cond=clickable))
         self.wait_css('#{}-name'.format(el_prefix_id), cond=invisible)
 
         self.create_storage_by_ui(name=name,
@@ -292,9 +286,9 @@ class MachinesStoragePoolTestSuite(MachinesLib):
         self.send_keys(self.wait_css('#storage-pool-delete-volumes'),
                        Keys.SPACE,
                        clear=False)
-        self.click(self.wait_css(
-            'body > div:nth-child(2) > div.fade.in.modal > div > div > div.modal-footer > button.pf-c-button.pf-m-danger',
-            cond=clickable))
+        self.wait_css("div.pf-c-modal-box.pf-m-align-top.pf-m-md")
+        self.click(self.wait_css('div.pf-c-modal-box.pf-m-align-top.pf-m-md button.pf-c-button.pf-m-danger',
+                                 cond=clickable))
         self.wait_css('#{}-name'.format(el_prefix_id), cond=invisible)
 
         self.create_storage_by_ui(name=name,
@@ -312,7 +306,7 @@ class MachinesStoragePoolTestSuite(MachinesLib):
             size='100M')
 
         # Delete active ISCSI Storage Pool
-        self.click(self.wait_css('#card-pf-storage-pools > h2 > button',
+        self.click(self.wait_css('#card-pf-storage-pools button',
                                  cond=clickable))
         el_prefix_id = self.create_storage_by_ui(name=pool_name,
                                                  storage_type='iscsi',
@@ -322,9 +316,9 @@ class MachinesStoragePoolTestSuite(MachinesLib):
 
         self.click(
             self.wait_css('#delete-{}'.format(el_prefix_id), cond=clickable))
-        self.click(
-            self.wait_css('body > div:nth-child(2) > div.fade.in.modal > div > div > div.modal-footer > button.pf-c-button.pf-m-danger',
-                          cond=clickable))
+        self.wait_css("div.pf-c-modal-box.pf-m-align-top.pf-m-md")
+        self.click(self.wait_css('div.pf-c-modal-box.pf-m-align-top.pf-m-md button.pf-c-button.pf-m-danger',
+                                 cond=clickable))
         self.wait_css('#{}-name'.format(el_prefix_id), cond=invisible)
 
         cmd_res = self.machine.execute(
@@ -346,9 +340,9 @@ class MachinesStoragePoolTestSuite(MachinesLib):
 
         self.click(
             self.wait_css('#delete-{}'.format(el_prefix_id), cond=clickable))
-        self.click(
-            self.wait_css('body > div:nth-child(2) > div.fade.in.modal > div > div > div.modal-footer > button.pf-c-button.pf-m-danger',
-                          cond=clickable))
+        self.wait_css("div.pf-c-modal-box.pf-m-align-top.pf-m-md")
+        self.click(self.wait_css('div.pf-c-modal-box.pf-m-align-top.pf-m-md button.pf-c-button.pf-m-danger',
+                                 cond=clickable))
         self.wait_css('#{}-name'.format(el_prefix_id), cond=invisible)
 
         cmd_res = self.machine.execute(
@@ -378,7 +372,8 @@ class MachinesStoragePoolTestSuite(MachinesLib):
 
         self.click(self.wait_css('#delete-{}'.format(el_prefix_id),
                                  cond=clickable))
-        self.click(self.wait_css('body > div:nth-child(2) > div.fade.in.modal > div > div > div.modal-footer > button.pf-c-button.pf-m-danger',
+        self.wait_css("div.pf-c-modal-box.pf-m-align-top.pf-m-md")
+        self.click(self.wait_css('div.pf-c-modal-box.pf-m-align-top.pf-m-md button.pf-c-button.pf-m-danger',
                                  cond=clickable))
         self.wait_css('#{}-name'.format(el_prefix_id), cond=invisible)
         wait(lambda: vol_name in self.machine.execute('lsblk'))
@@ -393,7 +388,8 @@ class MachinesStoragePoolTestSuite(MachinesLib):
                       cond=text_in,
                       text_='inactive')
         self.click(self.wait_css('#delete-{}'.format(el_prefix_id), cond=clickable))
-        self.click(self.wait_css('body > div:nth-child(2) > div.fade.in.modal > div > div > div.modal-footer > button.pf-c-button.pf-m-danger',
+        self.wait_css("div.pf-c-modal-box.pf-m-align-top.pf-m-md")
+        self.click(self.wait_css('div.pf-c-modal-box.pf-m-align-top.pf-m-md button.pf-c-button.pf-m-danger',
                                  cond=clickable))
         self.wait_css('#{}-name'.format(el_prefix_id), cond=invisible)
         wait(lambda: vol_name in self.machine.execute('lsblk'))
@@ -409,7 +405,8 @@ class MachinesStoragePoolTestSuite(MachinesLib):
         self.check_box(self.wait_css('#storage-pool-delete-volumes', cond=clickable))
         wait(lambda: self.wait_css('#storage-pool-delete-volumes').is_selected())
 
-        self.click(self.wait_css('body > div:nth-child(2) > div.fade.in.modal > div > div > div.modal-footer > button.pf-c-button.pf-m-danger',
+        self.wait_css("div.pf-c-modal-box.pf-m-align-top.pf-m-md")
+        self.click(self.wait_css('div.pf-c-modal-box.pf-m-align-top.pf-m-md button.pf-c-button.pf-m-danger',
                                  cond=clickable))
         self.wait_css('#{}-name'.format(el_prefix_id), cond=invisible)
         wait(lambda: vol_name not in self.machine.execute('lsblk'))
@@ -425,7 +422,7 @@ class MachinesStoragePoolTestSuite(MachinesLib):
         self.machine.execute('sudo virsh pool-create-as {} {} --target {}'.format(pool_name, 'dir', pool_path))
         self.machine.execute('sudo virsh vol-create-as {} {} {}'.format(pool_name, vol_name, '10M'))
         # Refresh to reload the pool information
-        self.click(self.wait_css('#card-pf-storage-pools > h2 > button',
+        self.click(self.wait_css('#card-pf-storage-pools button',
                                  cond=clickable))
         self.refresh_machines_page()
         # Check information about the pool and volume which is created above
@@ -450,7 +447,7 @@ class MachinesStoragePoolTestSuite(MachinesLib):
 
         self.create_vm(name)
 
-        self.click(self.wait_css('#card-pf-storage-pools > h2 > button',
+        self.click(self.wait_css('#card-pf-storage-pools button',
                                  cond=clickable))
         self.click(self.wait_css('tr[data-row-id="pool-default-system"] > td > button', cond=clickable))
         self.click(self.wait_css('#pool-default-system-storage-volumes', cond=clickable))

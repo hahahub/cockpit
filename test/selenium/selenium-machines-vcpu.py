@@ -14,6 +14,7 @@ class MachinesOverviewTestSuite(MachinesLib):
         # create a vm on host
         name = "staticvm"
         args = self.create_vm(name, state=vmstate)
+        self.goToVMPage(name)
 
         # open vcpu configure window
         self.click(self.wait_css('#vm-{}-vcpus-count'.format(name), cond=clickable))
@@ -26,7 +27,7 @@ class MachinesOverviewTestSuite(MachinesLib):
         self.select_by_text(self.wait_id('socketsSelect'), sockets)
         self.select_by_text(self.wait_id('coresSelect'), cores)
         self.select_by_text(self.wait_id('threadsSelect'), threads)
-        if vmstate == 'running':
+        if vmstate == 'Running':
             cond = visible
         else:
             cond = invisible
@@ -35,23 +36,23 @@ class MachinesOverviewTestSuite(MachinesLib):
         # apply settings
         self.click(self.wait_css('#machines-vcpu-modal-dialog-apply', cond=clickable))
         self.wait_css('#machines-vcpu-modal-dialog', cond=invisible)
-        if vmstate == 'running':
+        if vmstate == 'Running':
             tmpcount = '1'
         else:
             tmpcount = count
         self.wait_css('#vm-{}-vcpus-count'.format(name), cond=text_in, text_=tmpcount)
 
         # if configure vcpu while vm is running, needs to shut down vm to let configuration take effect.
-        if vmstate == 'running':
+        if vmstate == 'Running':
             # shut down may not work if the VM is not completely started
             self.wait_vm_complete_start(args)
             self.click(self.wait_css('#vm-{}-shutdown-button'.format(name), cond=clickable))
-            self.wait_css('#vm-{}-state'.format(name), cond=text_in, text_='shut off')
+            self.wait_css('#vm-{}-state'.format(name), cond=text_in, text_='Shut off')
             self.wait_css('#vm-{}-vcpus-count'.format(name), cond=text_in, text_=count)
 
         # run vm to see if the configurations are persisted
         self.click(self.wait_css('#vm-{}-run'.format(name), cond=clickable))
-        self.wait_css('#vm-{}-state'.format(name), cond=text_in, text_='running')
+        self.wait_css('#vm-{}-state'.format(name), cond=text_in, text_='Running')
         self.wait_css('#vm-{}-vcpus-count'.format(name), cond=text_in, text_=count)
         self.click(self.wait_css('#vm-{}-vcpus-count'.format(name), cond=clickable))
         self.wait_xpath("//input[@id='machines-vcpu-count-field' and @value={}]".format(count))
@@ -71,7 +72,7 @@ class MachinesOverviewTestSuite(MachinesLib):
         self.machine.execute(cmd)
 
     def testVcpuConfig0(self):
-        self.vcpuConfigureAndCheck('shut off', '8', '4', '2', '2', '2')
+        self.vcpuConfigureAndCheck('Shut off', '8', '4', '2', '2', '2')
 
     def testVcpuConfig1(self):
-        self.vcpuConfigureAndCheck('running', '16', '8', '2', '4', '2')
+        self.vcpuConfigureAndCheck('Running', '16', '8', '2', '4', '2')

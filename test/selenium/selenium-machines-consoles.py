@@ -16,10 +16,10 @@ class MachinesConsolesTestSuite(MachinesLib):
         name = "staticvm"
         args = self.create_vm(name, graphics='vnc')
 
-        self.click(self.wait_css('#vm-{}-consoles'.format(name), cond=clickable))
+        self.goToVMPage(name)
         # HACK: cond=text_in does not work with <select> in Edge
         s = Select(self.wait_id('console-type-select'))
-        wait(lambda: s.first_selected_option.text == 'Graphics Console (VNC)')
+        wait(lambda: s.first_selected_option.text.strip() == 'Graphics console (VNC)')
         self.wait_css('.toolbar-pf-results canvas')
 
         # Test ctrl+alt+del
@@ -34,9 +34,9 @@ class MachinesConsolesTestSuite(MachinesLib):
     def testExternalConsole(self):
         name = "staticvm"
         self.create_vm(name)
+        self.goToVMPage(name)
 
-        self.click(self.wait_css('#vm-{}-consoles'.format(name), cond=clickable))
-        self.wait_id('console-type-select', cond=text_in, text_='Graphics Console in Desktop Viewer')
+        self.wait_id('console-type-select', cond=text_in, text_='Graphics console in desktop viewer')
         # Launch remote viewer
         self.click(self.wait_css('#vm-{}-consoles-launch'.format(name), cond=clickable))
         self.wait_css('#dynamically-generated-file', cond=present)
@@ -51,15 +51,15 @@ class MachinesConsolesTestSuite(MachinesLib):
     def testSerialConsole(self):
         name = "staticvm"
         self.create_vm(name, graphics='vnc', ptyconsole=True)
+        self.goToVMPage(name)
 
         # Open serial console
-        self.click(self.wait_css('#vm-{}-consoles'.format(name), cond=clickable))
-        self.select_by_text(self.wait_id('console-type-select'), 'Serial Console')
+        self.select_by_text(self.wait_id('console-type-select'), 'Serial console')
         self.wait_css(".xterm-accessibility-tree")
 
         # Disconnect
         self.click(self.wait_css("#{}-serialconsole-disconnect".format(name), cond=clickable))
-        self.wait_text("Disconnected from serial console. Click the Connect button.")
+        self.wait_text("Disconnected from serial console. Click the connect button.")
 
         # Reconnect
         self.click(self.wait_css("#{}-serialconsole-connect".format(name), cond=clickable))

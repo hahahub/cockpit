@@ -1,6 +1,5 @@
 from testlib_avocado.seleniumlib import clickable, invisible, text_in
 from testlib_avocado.machineslib import MachinesLib
-from testlib_avocado.libdisc import Disc
 
 
 class MachinesDisksTestSuite(MachinesLib):
@@ -12,8 +11,8 @@ class MachinesDisksTestSuite(MachinesLib):
     def testDiskInfo(self):
         name = "staticvm"
         args = self.create_vm(name)
+        self.goToVMPage(name)
 
-        self.click(self.wait_css('#vm-{}-disks'.format(name), cond=clickable))
         self.wait_css('#vm-{}-disks-hda-device'.format(name), cond=text_in, text_='disk')
         self.wait_css('#vm-{}-disks-hda-bus'.format(name), cond=text_in, text_='ide')
         self.wait_css('#vm-{}-disks-hda-source-file'.format(name),
@@ -23,10 +22,11 @@ class MachinesDisksTestSuite(MachinesLib):
 
     def testAddDiskWithVmOff(self):
         name = "staticvm"
-        self.create_vm(name, state='shut off')
+        self.create_vm(name, state='Shut off')
+        self.goToVMPage(name)
+
         pool = self.prepare_disk('test')
 
-        self.click(self.wait_css('#vm-{}-disks'.format(name), cond=clickable))
         self.click(self.wait_css('#vm-{}-disks-adddisk'.format(name), cond=clickable))
         self.select_by_value(self.wait_css('#vm-{}-disks-adddisk-new-select-pool'.format(name)), pool[1])
         self.send_keys(self.wait_css('#vm-{}-disks-adddisk-new-name'.format(name)), 'qcow2disk_' + MachinesLib.random_string())
@@ -45,7 +45,7 @@ class MachinesDisksTestSuite(MachinesLib):
         self.click(self.wait_css('#vm-{}-disks-adddisk'.format(name), cond=clickable))
         self.click(self.wait_css('#vm-{}-disks-adddisk-useexisting'.format(name), cond=clickable))
         self.select_by_value(self.wait_css('#vm-{}-disks-adddisk-existing-select-pool'.format(name)), pool[1])
-        self.click(self.wait_css('#vm-{}-disks-adddisk-dialog-add'.format(name, cond=clickable)))
+        self.click(self.wait_css('#vm-{}-disks-adddisk-dialog-add'.format(name), cond=clickable))
         self.wait_dialog_disappear()
         self.wait_css('#vm-{}-disks-vdc-device'.format(name))
 
@@ -53,7 +53,7 @@ class MachinesDisksTestSuite(MachinesLib):
         self.click(self.wait_css('#vm-{}-disks-adddisk-useexisting'.format(name), cond=clickable))
         self.select_by_value(self.wait_css('#vm-{}-disks-adddisk-existing-select-pool'.format(name)), pool[2])
         self.select_by_value(self.wait_css('#vm-{}-disks-adddisk-existing-select-volume'.format(name)), pool[0][pool[2]][1])
-        self.click(self.wait_css('#vm-{}-disks-adddisk-dialog-add'.format(name, cond=clickable)))
+        self.click(self.wait_css('#vm-{}-disks-adddisk-dialog-add'.format(name), cond=clickable))
         self.wait_dialog_disappear()
         self.wait_css('#vm-{}-disks-vdd-device'.format(name))
 
@@ -67,9 +67,10 @@ class MachinesDisksTestSuite(MachinesLib):
     def testAddDiskWithVmOn(self):
         name = "staticvm"
         self.create_vm(name, wait=True)
+        self.goToVMPage(name)
+
         pool = self.prepare_disk('test')
 
-        self.click(self.wait_css('#vm-{}-disks'.format(name), cond=clickable))
         self.click(self.wait_css('#vm-{}-disks-adddisk'.format(name), cond=clickable))
         self.select_by_value(self.wait_css('#vm-{}-disks-adddisk-new-select-pool'.format(name)), pool[2])
         self.send_keys(self.wait_css('#vm-{}-disks-adddisk-new-name'.format(name)), 'qcow2disk_' + MachinesLib.random_string())
@@ -89,7 +90,7 @@ class MachinesDisksTestSuite(MachinesLib):
         self.click(self.wait_css('#vm-{}-disks-adddisk'.format(name), cond=clickable))
         self.click(self.wait_css('#vm-{}-disks-adddisk-useexisting'.format(name), cond=clickable))
         self.select_by_value(self.wait_css('#vm-{}-disks-adddisk-existing-select-pool'.format(name)), pool[1])
-        self.click(self.wait_css('#vm-{}-disks-adddisk-dialog-add'.format(name, cond=clickable)))
+        self.click(self.wait_css('#vm-{}-disks-adddisk-dialog-add'.format(name), cond=clickable))
         self.wait_dialog_disappear()
         self.wait_css('#vm-{}-disks-vdc-device'.format(name))
 
@@ -98,7 +99,7 @@ class MachinesDisksTestSuite(MachinesLib):
         self.select_by_value(self.wait_css('#vm-{}-disks-adddisk-existing-select-pool'.format(name)), pool[2])
         self.select_by_value(self.wait_css('#vm-{}-disks-adddisk-existing-select-volume'.format(name)), pool[0][pool[2]][1])
         self.check_box(self.wait_css('#vm-{}-disks-adddisk-permanent'.format(name), cond=clickable))
-        self.click(self.wait_css('#vm-{}-disks-adddisk-dialog-add'.format(name, cond=clickable)))
+        self.click(self.wait_css('#vm-{}-disks-adddisk-dialog-add'.format(name), cond=clickable))
         self.wait_dialog_disappear()
         self.wait_css('#vm-{}-disks-vdd-device'.format(name))
 
@@ -112,15 +113,15 @@ class MachinesDisksTestSuite(MachinesLib):
     def testDetachDiskVmOn(self):
         name = "staticvm"
         self.create_vm(name, wait=True)
+        self.goToVMPage(name)
 
-        self.click(self.wait_css('#vm-{}-disks'.format(name), cond=clickable))
         self.click(self.wait_css('#vm-{}-disks-adddisk'.format(name), cond=clickable))
         self.select_by_value(self.wait_css('#vm-{}-disks-adddisk-new-select-pool'.format(name)), 'default')
         self.send_keys(self.wait_css('#vm-{}-disks-adddisk-new-name'.format(name)), 'detachdisk_vm_on_' + MachinesLib.random_string())
         self.click(self.wait_css('#vm-{}-disks-adddisk-dialog-add'.format(name), cond=clickable))
         self.wait_css('#vm-{}-disks-vda-device'.format(name))
         self.click(self.wait_css('#delete-{}-disk-vda'.format(name), cond=clickable))
-        self.click(self.wait_css('.modal-footer button.pf-c-button.pf-m-danger'.format(name), cond=clickable))
+        self.click(self.wait_css('button.pf-c-button.pf-m-danger.pf-m-progress', cond=clickable))
         self.wait_css('vm-{}-disks-vda-device'.format(name), cond=invisible)
         self.click(self.wait_css('#vm-{}-shutdown-button'.format(name), cond=clickable))
         self.wait_css('#vm-{}-shutdown-button'.format(name), cond=invisible)
@@ -132,16 +133,16 @@ class MachinesDisksTestSuite(MachinesLib):
 
     def testDetachDiskVmOff(self):
         name = "staticvm"
-        self.create_vm(name, state='shut off')
+        self.create_vm(name, state='Shut off')
+        self.goToVMPage(name)
 
-        self.click(self.wait_css('#vm-{}-disks'.format(name), cond=clickable))
         self.click(self.wait_css('#vm-{}-disks-adddisk'.format(name), cond=clickable))
         self.select_by_value(self.wait_css('#vm-{}-disks-adddisk-new-select-pool'.format(name)), 'default')
         self.send_keys(self.wait_css('#vm-{}-disks-adddisk-new-name'.format(name)), 'detachdisk_vm_off_' + MachinesLib.random_string())
         self.click(self.wait_css('#vm-{}-disks-adddisk-dialog-add'.format(name), cond=clickable))
         self.wait_css('#vm-{}-disks-vda-device'.format(name))
         self.click(self.wait_css('#delete-{}-disk-vda'.format(name), cond=clickable))
-        self.click(self.wait_css('.modal-footer button.pf-c-button.pf-m-danger'.format(name), cond=clickable))
+        self.click(self.wait_css('button.pf-c-button.pf-m-danger.pf-m-progress', cond=clickable))
         self.wait_css('#vm-{}-disks-vda-device'.format(name), cond=invisible)
         self.click(self.wait_css('#vm-{}-run'.format(name), cond=clickable))
         self.wait_css('#vm-{}-run'.format(name), cond=invisible)
@@ -152,8 +153,8 @@ class MachinesDisksTestSuite(MachinesLib):
     def testAddDiskWithPerformanceOption(self):
         name = 'test_' + MachinesLib.random_string()
         self.create_vm(name)
-        self.click(self.wait_css('#vm-{}-disks'.format(name),
-                                 cond=clickable))
+        self.goToVMPage(name)
+
         disk_type_l = ['qcow2', 'raw']
         disk_preform_l = ['default',
                           'none',
@@ -186,23 +187,3 @@ class MachinesDisksTestSuite(MachinesLib):
                                   text_=dp)
                 self.assertIn(vol, self.machine.execute('sudo virsh dumpxml {}'.format(name)))
                 target_start += 1
-
-    def testAddDiskFromISCSIPool(self):
-        pool_name = 'test_nfs_' + MachinesLib.random_string()
-        disc = Disc(self.machine)
-        iqn = disc.addtarget('test' + MachinesLib.random_string(),
-                             '100M')
-
-        self.click(self.wait_css('#card-pf-storage-pools > h2 > button',
-                                 cond=clickable))
-        self.wait_css('#storage-pools-listing')
-        el_prefix = self.create_storage_by_ui(name=pool_name,
-                                              storage_type='iscsi',
-                                              target_path='/dev/disk/by-path',
-                                              host='127.0.0.1',
-                                              source_path=iqn)
-        self.wait_css('#{}-name'.format(el_prefix))
-        self.click(self.wait_css('#app a.pf-c-breadcrumb__link', cond=clickable))
-        self.wait_css('#virtual-machines-listing')
-
-        disc.clear()

@@ -13,24 +13,17 @@ class MachinesNetworksTestSuite(MachinesLib):
     def testNetworkInfo(self):
         net_cmd_active = int(self.machine.execute('sudo virsh net-list | awk \'NR>=3{if($0!="")print}\' | wc -l')) + int(
             self.machine.execute('virsh net-list | awk \'NR>=3{if($0!="")print}\' | wc -l'))
-        print(net_cmd_active)
-        print(self.wait_css('#card-pf-networks > div > p > span:nth-child(1)'))
-        print(self.wait_css('#card-pf-networks > div > p > span:nth-child(1)').text)
-        self.wait_css('#card-pf-networks > div > p > span:nth-child(1)',
+        self.wait_css('#card-pf-networks div.active-resources:nth-child(1)',
                       cond=text_in,
                       text_=str(net_cmd_active))
 
-        total = int(self.wait_css(
-            '#card-pf-networks > div > p > span:nth-child(1)').text)
-        active = int(self.wait_css(
-            '#card-pf-networks > div > p > span:nth-child(1)').text)
-        inactive = int(self.wait_css(
-            '#card-pf-networks > div > p > span:nth-child(2)').text)
+        total = int(self.wait_css('#card-pf-networks span.card-pf-title-link').text.split(" ")[0])
+        active = int(self.wait_css('#card-pf-networks div.active-resources:nth-child(1)').text)
+        inactive = int(self.wait_css('#card-pf-networks div.active-resources:nth-child(3)').text)
 
         self.assertEqual(total, active + inactive)
         # switch to the network page
-        self.click(self.wait_css('#card-pf-networks > h2 > button',
-                                 cond=clickable))
+        self.click(self.wait_css('#card-pf-networks button', cond=clickable))
         self.wait_css('#networks-listing')
 
         page_active = 0
@@ -62,7 +55,7 @@ class MachinesNetworksTestSuite(MachinesLib):
         self.create_network(net_name,
                             active=True)
 
-        self.click(self.wait_css('#card-pf-networks > h2 > button',
+        self.click(self.wait_css('#card-pf-networks button',
                                  cond=clickable))
         self.click(self.wait_css('tr[data-row-id="network-{}-system"] > td > button'.format(net_name),
                                  cond=clickable))
@@ -91,7 +84,7 @@ class MachinesNetworksTestSuite(MachinesLib):
         self.create_network(net_name,
                             active=True)
 
-        self.click(self.wait_css('#card-pf-networks > h2 > button',
+        self.click(self.wait_css('#card-pf-networks button',
                                  cond=clickable))
         self.click(self.wait_css('tr[data-row-id="network-{}-system"] > td > button'.format(net_name),
                                  cond=clickable))
@@ -111,7 +104,7 @@ class MachinesNetworksTestSuite(MachinesLib):
         net_1 = 'test_net_deletion_' + MachinesLib.random_string()
         self.net_delete_list[net_1] = False
 
-        self.click(self.wait_css('#card-pf-networks > h2 > button',
+        self.click(self.wait_css('#card-pf-networks button',
                                  cond=clickable))
         self.create_network(net_1, persistent=False)
         self.click(self.wait_css('tr[data-row-id="network-{}-system"] > td > button'.format(net_1),

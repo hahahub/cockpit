@@ -12,12 +12,11 @@ class MachinesNetworksTestSuite(MachinesLib):
     def testNetworkInfo(self):
         name = "staticvm"
         self.create_vm(name)
+        self.goToVMPage(name)
 
         net_info = self.machine.execute('sudo virsh domiflist %s | awk \'NR>=3{if($0!="")print}\'' % name).split()
         net_state = self.machine.execute('sudo virsh domif-getlink {} {}'.format(name, net_info[0])).split()[1]
 
-        self.click(self.wait_css('#vm-{}-networks'.format(name),
-                                 cond=clickable))
         self.wait_css('#vm-{}-network-1-type'.format(name),
                       cond=text_in,
                       text_=net_info[1])
@@ -37,30 +36,31 @@ class MachinesNetworksTestSuite(MachinesLib):
     def testNetworkPlug(self):
         name = "staticvm"
         self.create_vm(name)
+        self.goToVMPage(name)
 
-        self.click(self.wait_css('#vm-{}-networks'.format(name), cond=clickable))
         self.wait_css('#vm-{}-network-1-type'.format(name))
         # Unplug
-        self.wait_css('.machines-listing-actions > button', cond=text_in, text_='Unplug')
-        self.click(self.wait_css('.machines-listing-actions > button', cond=clickable))
+        self.wait_css('button[title="Unplug"]', cond=text_in, text_='Unplug')
+        self.click(self.wait_css('button[title="Unplug"]', cond=clickable))
         self.wait_css('#vm-{}-network-1-state'.format(name), cond=text_in, text_='down')
-        self.wait_css('.machines-listing-actions > button', cond=text_in, text_='Plug')
+        self.wait_css('button[title="Plug"]', cond=text_in, text_='Plug')
         self.assertIn('down', self.machine.execute('sudo virsh domif-getlink {} vnet0'.format(name)))
         # Plug
-        self.click(self.wait_css('.machines-listing-actions > button', cond=clickable))
+        self.click(self.wait_css('button[title="Plug"]', cond=clickable))
         self.wait_css('#vm-{}-network-1-state'.format(name), cond=text_in, text_='up')
-        self.wait_css('.machines-listing-actions > button', cond=text_in, text_='Unplug')
+        self.wait_css('button[title="Unplug"]', cond=text_in, text_='Unplug')
         self.assertIn('up', self.machine.execute('sudo virsh domif-getlink {} vnet0'.format(name)))
 
     def testNetworkEditWithRunning(self):
         name = 'staticvm'
         self.create_vm(name)
+        self.goToVMPage(name)
 
-        self.click(self.wait_css('#vm-{}-networks'.format(name), cond=clickable))
-        self.wait_css('.machines-network-list')
+        self.wait_css('#vm-{}-networks'.format(name))
         net_model = self.wait_css('#vm-{}-network-1-model'.format(name)).text
 
-        self.click(self.wait_css('#vm-{}-network-1-edit-dialog'.format(name), cond=clickable))
+        self.click(self.wait_css('#vm-{}-network-1-edit-dialog'.format(name),
+                                 cond=clickable))
         self.wait_css('#vm-{}-network-1-edit-dialog-modal-window'.format(name))
         self.select(self.wait_css('#vm-{}-network-1-select-model'.format(name)), "select_by_index", 1)
         self.wait_text('Changes will take effect after shutting down the VM')
@@ -73,17 +73,16 @@ class MachinesNetworksTestSuite(MachinesLib):
         ActionChains(self.driver).move_to_element(self.wait_css('#vm-{}-network-1-model-tooltip'.format(name))).perform()
         self.wait_css('#tip-network', cond=text_in, text_='Changes will take effect after shutting down the VM')
         self.click(self.wait_css('#vm-{}-action-kebab button'.format(name), cond=clickable))
-        self.wait_css('ul.pf-c-dropdown__menu.pf-m-align-right')
         self.click(self.wait_css('#vm-{}-forceOff'.format(name), cond=clickable))
         self.wait_css('#vm-{}-network-1-model-tooltip'.format(name), cond=invisible)
         self.assertNotEqual(net_model, self.wait_css('#vm-{}-network-1-model'.format(name)).text, 'Text should be changed')
 
     def testNetworkEditWithOff(self):
         name = 'staticvm'
-        self.create_vm(name, state='shut off')
+        self.create_vm(name, state='Shut off')
+        self.goToVMPage(name)
 
-        self.click(self.wait_css('#vm-{}-networks'.format(name), cond=clickable))
-        self.wait_css('.machines-network-list')
+        self.wait_css('#vm-{}-networks'.format(name))
 
         self.click(self.wait_css('#vm-{}-network-1-edit-dialog'.format(name), cond=clickable))
         self.wait_css('#vm-{}-network-1-edit-dialog-modal-window'.format(name))
