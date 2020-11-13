@@ -2588,7 +2588,7 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
                 self.checkEnvIsEmpty()
 
         def createTest(self, dialog):
-            self._tryCreate(dialog) \
+            self._tryCreate(dialog)
 
             # When not booting the actual OS from either existing image
             # configure virt-install to wait for the installation to complete.
@@ -4727,7 +4727,7 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
             self,
             pool_name="disk-pool",
             pool_type="disk",
-            vol_name="sda1", # Partition names must follow pattern of sda1, sda2...
+            vol_name="sdb1", # Partition names must follow pattern of sda1, sda2...
             size="10", # Only 50MiB available on disk-pool
             unit="MiB",
             format="none",
@@ -4940,6 +4940,7 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
             persistent_vm=False,
         ).execute()
         m.execute("virsh define /tmp/subVmTest1.xml")
+        time.sleep(1)
 
         b.click("#vm-subVmTest1-action-kebab button")
         b.click("#vm-subVmTest1-forceOff")
