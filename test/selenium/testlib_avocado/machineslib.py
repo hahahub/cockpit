@@ -234,11 +234,11 @@ class MachinesLib(SeleniumTest):
                         name='default',
                         source_type='file',
                         source='/var/lib/libvirt/images/cirros.qcow2',
-                        operating_system='CirrOS 0.4.0',
+                        operating_system='Alpine Linux 3.8',
                         storage_pool='NewVolume',
                         volume_name=None,
-                        mem=1,
-                        mem_unit='G',
+                        mem=128,
+                        mem_unit='M',
                         storage=10,
                         storage_unit='G',
                         immediately_start=False):
@@ -262,14 +262,16 @@ class MachinesLib(SeleniumTest):
 
         # According to different 'Installation Type' to input 'Installation Source'
         if source_type in ['file', 'disk_image']:
-            # sleep here as maybe the source can not be searched in the shown list if sending keys too fast
-            sleep(1)
             self.click(self.wait_css('label[for=source-{}] + div button'.format("file" if source_type == 'file' else "disk"),
                                      cond=clickable))
             self.wait_css("#source-{}".format("file" if source_type == 'file' else "disk"))
 
-            self.send_keys(self.wait_css('label[for=source-{}] + div input'.format("file" if source_type == 'file' else "disk")),
-                           source)
+            for s in source:
+                # sleep here for avoiding selenium can not catch the element correctly sometimes
+                sleep(0.1)
+                self.send_keys(self.wait_css('label[for=source-{}] + div input'.format("file" if source_type == 'file' else "disk")),
+                               s,
+                               clear=False)
             self.click(self.wait_text(source,
                                       element="button",
                                       cond=clickable))
