@@ -116,12 +116,12 @@ DOMAIN_XML = """
   <name>{name}</name>
   <vcpu>1</vcpu>
   <os>
-    <type arch='x86_64'>hvm</type>
+    <type arch='ppc64le'>hvm</type>
     <boot dev='hd'/>
     <boot dev='network'/>
   </os>
-  <memory unit='MiB'>256</memory>
-  <currentMemory unit='MiB'>256</currentMemory>
+  <memory unit='MiB'>512</memory>
+  <currentMemory unit='MiB'>512</currentMemory>
   <features>
     <acpi/>
   </features>
