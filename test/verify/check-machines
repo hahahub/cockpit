@@ -3934,7 +3934,7 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
         b.click("#activate-pool-mypool-system")
         b.wait_visible("#activate-pool-mypool-system:disabled")
 
-        # Transient network
+        # Transient pool
         self.togglePoolRow("myPoolThree", connectionName)
         b.wait_not_present("#pool-myPoolThree-{0}-autostart".format(connectionName)) # Transient pool shouldn't have autostart option
         b.wait_visible('#delete-pool-myPoolThree-{0}:disabled'.format(connectionName)) # Transient pool cannot be deleted
