@@ -3942,6 +3942,184 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
         # Check it's not present after deactivation
         self.waitPoolRow("myPoolThree", connectionName, False)
 
+    def testStoragePoolsDeletion(self):
+        m = self.machine
+        b = self.browser
+
+        # nfs
+        nfs_name = "nfs-pool"
+        nfs_pool = os.path.join(self.vm_tmpdir, nfs_name)
+        mnt_exports = os.path.join(self.vm_tmpdir, "mnt_exports")
+
+        self.restore_file("/etc/exports")
+        m.execute("mkdir {0} {1} && echo '{1} 127.0.0.1/24(rw,sync,no_root_squash,no_subtree_check,fsid=0)' > /etc/exports".format(nfs_pool, mnt_exports))
+        m.execute("systemctl restart nfs-server")
+        # Prepare an iscsi pool
+        # Debian images' -cloud kernel don't have target-cli-mod kmod
+        if "debian" not in m.image:
+            # Preparations for testing ISCSI pools
+            target_iqn = "iqn.2019-09.cockpit.lan"
+            self.prepareStorageDeviceOnISCSI(target_iqn)
+        # Prepare a disk with gpt partition table to test the disk storage pool type
+        dev = self.add_ram_disk()
+        m.execute("parted %s mklabel gpt" % dev)
+
+        self.login_and_go("/machines")
+        b.wait_in_text("body", "Virtual machines")
+
+        # Click on Storage Pools card
+        b.click("#card-pf-storage-pools .pf-c-card__header button")
+
+        class StoragePoolsRequirementAndDeletion:
+            def __init__(self,
+                         test_obj,
+                         name,
+                         pool_type,
+                         activate=False,
+                         remove_volume=False):
+                self.test_obj = test_obj
+                self.name = name
+                self.vol_name = None
+                self.pool_type = pool_type
+                self.activate = activate
+                self.remove_volume = remove_volume
+
+            def execute(self):
+                self.prepare()
+                self.delete()
+                self.verify()
+
+            def prepare(self):
+                if self.pool_type == "netfs":
+                    self.vol_name = self.name + "-vol"
+
+                    m.execute("virsh pool-define-as {0} --type netfs --target {1} --source-host 127.0.0.1 --source-path {2}".format(self.name, nfs_pool, mnt_exports))
+                    time.sleep(1)
+                    if self.activate:
+                        m.execute("virsh pool-start {}".format(self.name))
+                        if self.vol_name not in m.execute("virsh vol-list {}".format(self.name)):
+                            m.execute("virsh vol-create-as {} {} 1M".format(self.name, self.vol_name))
+                elif self.pool_type == "iscsi":
+                    m.execute("virsh pool-define-as {0} --type iscsi --target /dev/disk/by-id --source-host 127.0.0.1 --source-dev {1}".format(self.name, target_iqn))
+                    if self.activate:
+                        m.execute("virsh pool-start {}".format(self.name))
+                        wait(lambda: "unit:0:0:0" in m.execute("virsh pool-refresh {0} && virsh vol-list {0}".format("iscsi-pool")), delay=3)
+                elif self.pool_type == "disk":
+                    self.vol_name = dev.split("/")[-1] + "1"
+                    m.execute("virsh pool-define-as {0} --type disk --target /mnt --source-dev {1} --source-format {2}".format(self.name, dev, "gpt"))
+                    if self.activate:
+                        m.execute("virsh pool-start {}".format(self.name))
+                        if self.vol_name not in m.execute("virsh vol-list {}".format(self.name)):
+                            m.execute("virsh vol-create-as {} {} 1M".format(self.name, self.vol_name))
+                else:
+                    raise AssertionError("unsupport pool_type")
+
+                # refresh for making sure the disk is shown on the page
+                b.reload()
+                b.enter_page('/machines')
+                self.test_obj.waitPoolRow(self.name)
+                self.test_obj.togglePoolRow(self.name)
+
+            def delete(self):
+                b.click("#delete-pool-{}-system".format(self.name))
+                b.wait_present("#app div.pf-c-modal-box.pf-m-align-top.pf-m-md")
+                if self.activate:
+                    b.set_checked("#storage-pool-delete-volumes", self.remove_volume)
+                b.click("div.pf-c-modal-box.pf-m-align-top.pf-m-md button.pf-c-button.pf-m-danger")
+
+                if self.pool_type == "iscsi" and self.activate and self.remove_volume:
+                    b.wait_present("#app div.pf-c-modal-box.pf-m-align-top.pf-m-md")
+                else:
+                    b.wait_not_present("#app div.pf-c-modal-box.pf-m-align-top.pf-m-md")
+
+            def verify(self):
+                method_name = self.pool_type + "_verify"
+                if hasattr(self, method_name):
+                    getattr(self, method_name)()
+                else:
+                    raise AssertionError("unsupport verify")
+
+            def netfs_verify(self):
+                # verify the pool has been deleted
+                self.test_obj.waitPoolRow(self.name, present=False)
+                wait(lambda: self.name not in m.execute("virsh pool-list --all"))
+                # verify the volume when deleting active pools
+                if self.activate:
+                    vol_path = os.path.join(mnt_exports, self.vol_name)
+                    wait(lambda: m.execute("{}test -f {} && echo $?".format("! " if self.remove_volume else "", vol_path)))
+
+            def iscsi_verify(self):
+                if self.activate:
+                    if self.remove_volume:
+                        b.wait_in_text("#app .pf-c-alert__description", "storage pool does not support vol deletion")
+                        # clean as only this condition will left a undeletion pool
+                        b.click("div.pf-c-modal-box.pf-m-align-top.pf-m-md button.pf-c-button.pf-m-link.btn-cancel")
+                        b.wait_not_present("#app div.pf-c-modal-box.pf-m-align-top.pf-m-md")
+                        m.execute("virsh pool-destroy {0}; virsh pool-delete {0}; virsh pool-undefine {0}".format(self.name))
+                    else:
+                        self.test_obj.waitPoolRow(self.name, present=False)
+                elif not self.activate:
+                    self.test_obj.waitPoolRow(self.name, present=False)
+            def disk_verify(self):
+                # verify the pool has been deleted
+                self.test_obj.waitPoolRow(self.name, present=False)
+                wait(lambda: self.name not in m.execute("virsh pool-list --all"))
+                # verify the volume when deleting active pools
+                if self.activate:
+                    if self.remove_volume:
+                        wait(lambda: self.vol_name not in m.execute("lsblk"))
+                    else:
+                        wait(lambda: self.vol_name in m.execute("lsblk"))
+
+        # netfs pool deletion
+        StoragePoolsRequirementAndDeletion(self,
+                                           name=nfs_name,
+                                           pool_type="netfs",
+                                           activate=True).execute()
+
+        StoragePoolsRequirementAndDeletion(self,
+                                           name=nfs_name,
+                                           pool_type="netfs",
+                                           activate=True,
+                                           remove_volume=True).execute()
+
+        StoragePoolsRequirementAndDeletion(self,
+                                           name=nfs_name,
+                                           pool_type="netfs").execute()
+
+        # pdd pool deletion
+        StoragePoolsRequirementAndDeletion(self,
+                                           name="pdd-pool",
+                                           pool_type="disk",
+                                           activate=True).execute()
+
+        StoragePoolsRequirementAndDeletion(self,
+                                           name="pdd-pool",
+                                           pool_type="disk",
+                                           activate=True,
+                                           remove_volume=True).execute()
+
+        StoragePoolsRequirementAndDeletion(self,
+                                           name="pdd-pool",
+                                           pool_type="disk").execute()
+
+        # iscsi pool deletion
+        if "debian" not in m.image:
+            StoragePoolsRequirementAndDeletion(self,
+                                               name="iscsi-pool",
+                                               pool_type="iscsi",
+                                               activate=True,
+                                               remove_volume=True).execute()
+
+            StoragePoolsRequirementAndDeletion(self,
+                                               name="iscsi-pool",
+                                               pool_type="iscsi").execute()
+
+            StoragePoolsRequirementAndDeletion(self,
+                                               name="iscsi-pool",
+                                               pool_type="iscsi",
+                                               activate=True).execute()
+
     def testNetworksCreate(self):
         b = self.browser
         m = self.machine
