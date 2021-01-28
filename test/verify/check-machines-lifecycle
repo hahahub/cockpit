@@ -109,6 +109,9 @@ class TestMachinesLifecycle(VirtualMachinesCase):
         b.click("#vm-subVmTest1-action-kebab button")
         b.click("#vm-subVmTest1-pause")
         b.wait_in_text("#vm-subVmTest1-state", "Paused")
+        # check remove button for disk and network interface when the VM is paused
+        b.wait_visible("#delete-subVmTest1-disk-vda:disabled")
+        b.wait_visible("#delete-vm-subVmTest1-iface-1:disabled")
 
         # resume
         b.click("#vm-subVmTest1-action-kebab button")
