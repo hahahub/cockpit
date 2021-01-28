@@ -505,6 +505,17 @@ class TestMachinesDisks(VirtualMachinesCase):
             expected_target=get_next_free_target(used_targets)[-1],
         ).execute()
 
+        existing_disk = os.path.basename(dev) + "2"
+        self.machine.execute("virsh vol-create-as pool-disk %s 10M" % existing_disk)
+        self.VMAddDiskDialog(
+            self,
+            pool_name='pool-disk',
+            pool_type='disk',
+            volume_name=existing_disk,
+            use_existing_volume=existing_disk,
+            expected_target=get_next_free_target(used_targets)[-1],
+        ).execute()
+
         # AppArmor doesn't like the non-standard path for our storage pools
         if m.image in ["debian-testing"]:
             self.allow_journal_messages('.* type=1400 .* apparmor="DENIED" operation="open" profile="libvirt.* name="%s.*' % self.vm_tmpdir)
