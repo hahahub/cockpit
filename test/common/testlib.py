@@ -433,6 +433,14 @@ class Browser:
         self.wait_visible(selector)
         self.wait_js_func('ph_in_text', selector, text)
 
+    def wait_not_visible_in_text(self, selector, text):
+        self._wait_present(selector)
+        self.wait_js_func('ph_in_text', selector, text)
+
+    def wait_not_visible_not_in_text(self, selector, text):
+        self._wait_present(selector)
+        self.wait_js_func('!ph_in_text', selector, text)
+
     def wait_not_in_text(self, selector, text):
         self.wait_visible(selector)
         self.wait_js_func('!ph_in_text', selector, text)

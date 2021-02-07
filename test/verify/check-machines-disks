@@ -210,6 +210,34 @@ class TestMachinesDisks(VirtualMachinesCase):
         b.wait_visible("#vm-subVmTest1-disks-vda-device")
         b.wait_not_present("#vm-subVmTest1-disks-vdc-device")
 
+        # Check when no storage pools
+        # destroy the images pool
+        m.execute("virsh pool-destroy images")
+        b.click("#vm-subVmTest1-disks-adddisk")
+        b.wait_visible("#vm-subVmTest1-disks-adddisk-dialog-modal-window")
+        # Check
+        b.wait_visible("#vm-subVmTest1-disks-adddisk-dialog-add:disabled")
+        b.wait_not_visible_in_text("#vm-subVmTest1-disks-adddisk-new-select-pool option[value=\"no-resource\"]", "No storage pools available")
+        b.click("#vm-subVmTest1-disks-adddisk-useexisting")
+        b.wait_not_visible_in_text("#vm-subVmTest1-disks-adddisk-existing-select-pool option[value=\"no-resource\"]", "No storage pools available")
+        # Close the dialog
+        b.click("#vm-subVmTest1-disks-adddisk-dialog-cancel")
+        b.wait_not_present("#vm-subVmTest1-disks-adddisk-dialog-modal-window")
+        # undefine the images pool
+        m.execute("virsh pool-undefine images")
+        wait(lambda: "images" not in "virsh pool-list --all")
+        # Re-click 'Add Disk' button
+        b.click("#vm-subVmTest1-disks-adddisk")
+        b.wait_visible("#vm-subVmTest1-disks-adddisk-dialog-modal-window")
+        # Check
+        b.wait_visible("#vm-subVmTest1-disks-adddisk-dialog-add:disabled")
+        b.wait_not_visible_in_text("#vm-subVmTest1-disks-adddisk-new-select-pool option[value=\"no-resource\"]", "No storage pools available")
+        b.click("#vm-subVmTest1-disks-adddisk-useexisting")
+        b.wait_not_visible_in_text("#vm-subVmTest1-disks-adddisk-existing-select-pool option[value=\"no-resource\"]", "No storage pools available")
+        # Close the dialog
+        b.click("button[aria-label=\"Close\"]")
+        b.wait_not_present("#vm-subVmTest1-disks-adddisk-dialog-modal-window")
+
     class VMAddDiskDialog(object):
         def __init__(
             self, test_obj, pool_name=None, volume_name=None,
