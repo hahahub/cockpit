@@ -1413,9 +1413,12 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
         self.goToVmPage(name)
         b.wait_in_text("#vm-{0}-state".format(name), "Running") # running or paused
 
-        b.set_val("#console-type-select", "serial-browser")
-        b.wait_in_text("#{0}-terminal .xterm-accessibility-tree > div:nth-child(1)".format(name), "Connected to domain")
+        b.click("#pf-c-console__type-selector")
+        b.wait_visible("#pf-c-console__type-selector + .pf-c-select__menu")
+        b.click("#SerialConsole button")
+        b.wait_not_present("#pf-c-console__type-selector + .pf-c-select__menu")
 
+        b.wait_in_text("#{0}-terminal .xterm-accessibility-tree > div:last-child".format(name), "cirros login")
         b.click("#{0}-serialconsole-disconnect".format(name))
         b.wait_text("#{0}-terminal".format(name), "Disconnected from serial console. Click the connect button.")
 
