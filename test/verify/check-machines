@@ -1495,7 +1495,7 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
         runner.cancelDialogTest(TestMachines.VmDialog(self, sourceType='url',
                                                       location=config.TREE_URL,
                                                       memory_size=256, memory_size_unit='MiB',
-                                                      storage_pool="No storage",
+                                                      storage_pool="NoStorage",
                                                       os_name=config.FEDORA_28,
                                                       start_vm=False))
 
@@ -1535,7 +1535,7 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
         # When switching from PXE mode to anything else make sure that the source input is empty
         runner.checkDialogFormValidationTest(TestMachines.VmDialog(self, storage_size=1,
                                                                    sourceType='pxe',
-                                                                   location="Host device {0}: macvtap".format(iface),
+                                                                   location="type=direct,source={0}".format(iface),
                                                                    sourceTypeSecondChoice='url',
                                                                    start_vm=False),
                                       {"source-url": "Installation source must not be empty"})
@@ -1551,23 +1551,23 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
         if self.machine.image in ['debian-stable', 'debian-testing', 'centos-8-stream']:
             self.browser.wait_not_present('select option[data-value="Download an OS"]')
         else:
-            runner.createDownloadAnOSTest(TestMachines.VmDialog(self, sourceType='downloadOS',
+            runner.createDownloadAnOSTest(TestMachines.VmDialog(self, sourceType='os',
                                                                 expected_memory_size=256,
                                                                 expected_storage_size=256,
                                                                 os_name=config.FEDORA_28,
                                                                 os_short_id=config.FEDORA_28_SHORTID,
                                                                 start_vm=True))
 
-            runner.createDownloadAnOSTest(TestMachines.VmDialog(self, sourceType='downloadOS',
-                                                                is_unattended=True, profile="Workstation",
+            runner.createDownloadAnOSTest(TestMachines.VmDialog(self, sourceType='os',
+                                                                is_unattended=True, profile="desktop",
                                                                 root_password="dogsaremybestfr13nds",
                                                                 storage_size=246, storage_size_unit='MiB',
                                                                 os_name=config.FEDORA_28,
                                                                 os_short_id=config.FEDORA_28_SHORTID))
 
             # Don't create user account
-            runner.createDownloadAnOSTest(TestMachines.VmDialog(self, sourceType='downloadOS',
-                                                                is_unattended=True, profile="Server",
+            runner.createDownloadAnOSTest(TestMachines.VmDialog(self, sourceType='os',
+                                                                is_unattended=True, profile="jeos",
                                                                 root_password="catsaremybestfr13nds",
                                                                 storage_size=256, storage_size_unit='MiB',
                                                                 os_name=config.FEDORA_28,
@@ -1577,9 +1577,9 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
             # https://bugzilla.redhat.com/show_bug.cgi?id=1780451
             # downloadOS option exists only in virt-install >= 2.2.1 which is the reason we have the condition for the OSes list below
             if self.machine.image in ['debian-stable', 'debian-testing', 'centos-8-stream']:
-                self.browser.wait_not_present('select option[data-value="Download an OS"]')
+                self.browser.wait_not_present('select option[value=os]')
             else:
-                runner.createDownloadAnOSTest(TestMachines.VmDialog(self, name='existing-name', sourceType='downloadOS',
+                runner.createDownloadAnOSTest(TestMachines.VmDialog(self, name='existing-name', sourceType='os',
                                                                     expected_memory_size=256,
                                                                     expected_storage_size=256,
                                                                     os_name=config.FEDORA_28,
@@ -1601,7 +1601,7 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
         # check that the pxe booting is not available on session connection
         runner.checkPXENotAvailableSessionTest(TestMachines.VmDialog(self, name='pxe-guest',
                                                                      sourceType='pxe',
-                                                                     storage_pool="No storage",
+                                                                     storage_pool="NoStorage",
                                                                      connection="session"))
 
         self.machine.execute("virsh net-destroy default && virsh net-undefine default")
@@ -1634,9 +1634,9 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
         # First create the PXE VM but do not start it. We 'll need to tweak a bit the XML
         # to have serial console at bios and also redirect serial console to a file
         runner.createTest(TestMachines.VmDialog(self, name='pxe-guest', sourceType='pxe',
-                                                location="Virtual network pxe-nat: NAT",
+                                                location="network=pxe-nat",
                                                 memory_size=256, memory_size_unit='MiB',
-                                                storage_pool="No storage",
+                                                storage_pool="NoStorage",
                                                 start_vm=True, delete=False))
 
         # We don't want to use start_vm == False because if we get a separate install phase
@@ -1698,20 +1698,15 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
         # Check that host network devices are appearing in the options for PXE boot sources
         runner.createTest(TestMachines.VmDialog(self, sourceType='pxe',
                                                 name="pxe-guest",
-                                                location="Host device {0}: macvtap".format(iface),
+                                                location="type=direct,source={0}".format(iface),
                                                 storage_size=128, storage_size_unit='MiB',
                                                 start_vm=True,
                                                 delete=False))
         self.machine.execute("virsh destroy pxe-guest")
 
         # Verify that the newly created disk is first in the boot order and the network used for the PXE boot is marked as non bootable
-        b.click("#vm-pxe-guest-overview")
-        b.click("#vm-pxe-guest-boot-order button")
-        b.wait_visible("#vm-pxe-guest-order-modal-window")
-        b.wait_visible("#vm-pxe-guest-order-modal-device-row-0 input:checked")
-        b.wait_in_text("#vm-pxe-guest-order-modal-device-row-0 .list-group-item-heading", "disk")
-        b.wait_visible("#vm-pxe-guest-order-modal-device-row-1 input:not(checked)")
-        b.wait_in_text("#vm-pxe-guest-order-modal-device-row-1 .list-group-item-heading", "network")
+        b.wait_in_text("#vm-pxe-guest-boot-order", "disk")
+        b.wait_not_in_text("#vm-pxe-guest-boot-order", "network")
 
     def testCreateThenInstall(self):
         runner = TestMachines.CreateVmRunner(self)
@@ -1771,7 +1766,7 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
         # Check that when there is no storage pool defined a VM can still be created
         runner.createTest(TestMachines.VmDialog(self, sourceType='file',
                                                 location=config.NOVELL_MOCKUP_ISO_PATH,
-                                                storage_pool="No storage",
+                                                storage_pool="NoStorage",
                                                 start_vm=True))
 
         self.browser.switch_to_top()
@@ -1792,7 +1787,7 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
         runner.createTest(TestMachines.VmDialog(self, sourceType='file',
                                                 location=config.NOVELL_MOCKUP_ISO_PATH,
                                                 memory_size=256, memory_size_unit='MiB',
-                                                storage_pool="No storage",
+                                                storage_pool="NoStorage",
                                                 start_vm=False,
                                                 connection='session'))
 
@@ -1809,7 +1804,7 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
         runner.createTest(TestMachines.VmDialog(self, sourceType='file',
                                                 location=config.NOVELL_MOCKUP_ISO_PATH,
                                                 memory_size=100000, memory_size_unit='MiB',
-                                                storage_pool="No storage",
+                                                storage_pool="NoStorage",
                                                 start_vm=False))
         cmds = [
             "mkdir -p /var/lib/libvirt/pools/tmp\ pool; chmod a+rwx /var/lib/libvirt/pools/tmp\ pool",
@@ -1836,7 +1831,7 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
         runner.createTest(TestMachines.VmDialog(self, sourceType='file',
                                                 location=config.NOVELL_MOCKUP_ISO_PATH,
                                                 memory_size=256, memory_size_unit='MiB',
-                                                storage_pool="No storage",
+                                                storage_pool="NoStorage",
                                                 start_vm=True,))
 
         self.machine.execute("touch '{0}'".format(config.PATH_WITH_SPACE))
@@ -1844,7 +1839,7 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
         runner.createTest(TestMachines.VmDialog(self, sourceType='file',
                                                 location=config.PATH_WITH_SPACE,
                                                 memory_size=256, memory_size_unit='MiB',
-                                                storage_pool="No storage",
+                                                storage_pool="NoStorage",
                                                 start_vm=True,))
 
     def testCreateImportDisk(self):
@@ -1902,13 +1897,13 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
         runner.createTest(TestMachines.VmDialog(self, sourceType='url',
                                                 location=config.VALID_URL,
                                                 memory_size=512, memory_size_unit='MiB',
-                                                storage_pool="No storage",
+                                                storage_pool="NoStorage",
                                                 os_name=config.FEDORA_28))
 
         runner.createTest(TestMachines.VmDialog(self, sourceType='url',
                                                 location=config.VALID_URL,
                                                 memory_size=512, memory_size_unit='MiB',
-                                                storage_pool="No storage",
+                                                storage_pool="NoStorage",
                                                 os_name=config.FEDORA_28,
                                                 start_vm=False))
 
@@ -1922,7 +1917,7 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
         runner.createTest(TestMachines.VmDialog(self, sourceType='url',
                                                 location=config.ISO_URL,
                                                 memory_size=256, memory_size_unit='MiB',
-                                                storage_pool="No storage",
+                                                storage_pool="NoStorage",
                                                 start_vm=True))
 
         # This functionality works on debian only because of extra dep.
@@ -1933,7 +1928,7 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
             runner.checkDialogErrorTest(TestMachines.VmDialog(self, sourceType='url',
                                                               location=config.ISO_URL,
                                                               memory_size=256, memory_size_unit='MiB',
-                                                              storage_pool="No storage",
+                                                              storage_pool="NoStorage",
                                                               start_vm=True), ["qemu", "protocol"])
 
     def testDisabledCreate(self):
@@ -1986,7 +1981,7 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
                      profile=None,
                      root_password=None,
                      user_password=None,
-                     storage_pool='Create new volume', storage_volume='',
+                     storage_pool='NewVolume', storage_volume='',
                      start_vm=False,
                      delete=True,
                      env_is_empty=True,
@@ -2059,7 +2054,7 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
 
             # select "Installation Type" for more complete OS list
             if self.sourceType != "disk_image":
-                b.select_from_dropdown("#source-type", "Local install media")
+                b.select_from_dropdown("#source-type", "file")
             # input an OS and check there is no Ooops
             b.set_input_text("#os-select-group input", self.os_name)
             b.click("#os-select li button:contains('{}')".format(self.os_name))
@@ -2098,13 +2093,13 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
         def checkPXENotAvailableSession(self):
             self.browser.set_checked("#connectionName-{0}".format(self.connection), True)
             # Our custom select does not respond on the click function
-            self.browser.wait_present("#source-type option[value*='{0}']:disabled".format(self.sourceType))
+            self.browser.wait_not_present("#source-type option[value='{0}']".format(self.sourceType))
             return self
 
         def createAndVerifyVirtInstallArgs(self):
             self.browser.click(".pf-c-modal-box__footer button:contains(Create)")
             self.browser.wait_not_present("#create-vm-dialog")
-            if self.storage_pool != "No storage":
+            if self.storage_pool != "NoStorage":
                 self.goToVmPage(self.name)
                 self.browser.wait_text("#vm-{}-disks-vda-bus".format(self.name), "virtio")
                 self.goToMainPage()
@@ -2114,7 +2109,7 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
             virt_install_cmd_out = self.machine.execute(virt_install_cmd)
             self.assertIn("--install os={}".format(self.os_short_id), virt_install_cmd_out)
             if self.is_unattended:
-                self.assertIn("profile={0}".format('desktop' if self.profile == 'Workstation' else 'jeos'), virt_install_cmd_out)
+                self.assertIn("profile={0}".format(self.profile), virt_install_cmd_out)
                 if self.root_password:
                     root_password_file = virt_install_cmd_out.split("admin-password-file=", 1)[1].split(",")[0]
                     self.assertIn(self.machine.execute("cat {0}".format(root_password_file)).rstrip(), self.root_password)
@@ -2151,7 +2146,9 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
                 b.set_input_text("#source-url", self.location)
 
             if self.sourceTypeSecondChoice:
-                b.select_from_dropdown("#source-type", getSourceTypeLabel(self.sourceTypeSecondChoice))
+                b.select_from_dropdown("#source-type", self.sourceTypeSecondChoice)
+            #sleep here for automatically detecting of OS
+            b.wait_not_present("div.pf-c-select__toggle.pf-m-disabled.pf-m-typeahead")
 
             # For the mocked fedora URL installation wait to see that the OS section is automatically filed
             if self.sourceType == "url" and self.location == TestMachines.TestCreateConfig.TREE_URL:
@@ -2164,7 +2161,7 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
                     b.click("#os-select-group div button")
                     b.click("#os-select li:contains('{0}') button".format(self.os_name))
             elif self.os_name:
-                b.click("#os-select-group > div button")
+                b.click("#os-select-group > div button[aria-label=\"Options menu\"]")
                 b.click("#os-select li:contains('{0}') button".format(self.os_name))
 
             if self.sourceType != 'disk_image':
@@ -2172,13 +2169,13 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
                     b.wait_visible("#storage-pool-select")
                     b.select_from_dropdown("#storage-pool-select", self.storage_pool)
 
-                    if self.storage_pool == 'Create new volume' or self.storage_pool == 'No storage':
+                    if self.storage_pool == 'NewVolume' or self.storage_pool == 'NoStorage':
                         b.wait_not_present("#storage-volume-select")
                     else:
                         b.wait_visible("#storage-volume-select")
                         b.select_from_dropdown("#storage-volume-select", self.storage_volume)
 
-                    if self.storage_pool != 'Create new volume':
+                    if self.storage_pool != 'NewVolume':
                         b.wait_not_present("#storage-size")
                     else:
                         b.select_from_dropdown("#storage-size-unit-select", self.storage_size_unit)
@@ -2502,7 +2499,7 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
             self.test_obj.goToVmPage(name, dialog.connection or "system")
 
             # check bus type
-            if dialog.storage_pool != "No storage":
+            if dialog.storage_pool != "NoStorage":
                 self.browser.wait_in_text("#vm-{}-disks-vda-bus".format(dialog.name), "virtio")
             # check memory
             # adjust to how cockpit_format_bytes() formats sizes > 1024 MiB -- this depends on how much RAM
@@ -2523,7 +2520,7 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
                 else:
                     raise AssertionError("Unknown disk device")
             # New volume was created or existing volume was already chosen as destination
-            elif (dialog.storage_size is not None and dialog.storage_size > 0) or dialog.storage_pool not in ["No storage", "Create new volume"]:
+            elif (dialog.storage_size is not None and dialog.storage_size > 0) or dialog.storage_pool not in ["NoStorage", "NewVolume"]:
                 if b.is_present("#vm-{0}-disks-vda-device".format(name)):
                     b.wait_in_text("#vm-{0}-disks-vda-device".format(name), "disk")
                 elif b.is_present("#vm-{0}-disks-hda-device".format(name)):
@@ -2532,7 +2529,7 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
                     b.wait_in_text("#vm-{0}-disks-sda-device".format(name), "disk")
                 else:
                     raise AssertionError("Unknown disk device")
-            elif dialog.start_vm and (((dialog.storage_pool == 'No storage' or dialog.storage_size == 0) and dialog.sourceType == 'file') or dialog.sourceType == 'url'):
+            elif dialog.start_vm and (((dialog.storage_pool == 'NoStorage' or dialog.storage_size == 0) and dialog.sourceType == 'file') or dialog.sourceType == 'url'):
                 if b.is_present("#vm-{0}-disks-sda-device".format(name)):
                     b.wait_in_text("#vm-{0}-disks-sda-device".format(name), "cdrom")
                 elif b.is_present("#vm-{0}-disks-hda-device".format(name)):
@@ -2860,7 +2857,7 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
             b.wait_in_text("#vm-VmNotInstalled-firmware", "BIOS")
             b.click("#vm-VmNotInstalled-firmware")
             b.wait_visible(".pf-c-modal-box__body")
-            b.select_from_dropdown("select", "UEFI")
+            b.select_from_dropdown(".pf-c-modal-box__body select", "efi")
             b.click("#firmware-dialog-apply")
             b.wait_not_present(".pf-c-modal-box__body")
             b.wait_in_text("#vm-VmNotInstalled-firmware", "UEFI")
@@ -3228,16 +3225,14 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
         self.goToVmPage("subVmTest1")
 
         # Change Boot Order setting
-        bootOrder = b.text("#vm-subVmTest1-boot-order")
-        b.click("#vm-subVmTest1-boot-order button") # Open dialog
-        b.wait_visible(".pf-c-modal-box__body")
-        b.click("#vm-subVmTest1-order-modal-device-row-0 #vm-subVmTest1-order-modal-down") # Change order
-        b.click("#vm-subVmTest1-order-modal-save") # Save
-        b.wait_not_present(".pf-c-modal-box__body")
+        b.wait_visible("#vm-subVmTest1-cpu-model button[aria-disabled=false]")
+        b.click("#vm-subVmTest1-cpu-model button")
+        b.select_from_dropdown("#cpu-model-select-group select",
+                               "host-passthrough")
+        b.click("#cpu-config-dialog-apply")
 
         # Change vCPUs setting
         b.click("#vm-subVmTest1-vcpus-count button") # Open dialog
-        b.wait_visible(".pf-c-modal-box__body")
         b.set_input_text("#machines-vcpu-max-field", "3") # Change values
         b.set_input_text("#machines-vcpu-count-field", "3")
         b.click("#machines-vcpu-modal-dialog-apply") # Save
@@ -3249,7 +3244,7 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
         b.wait_in_text("#vm-subVmTest1-state", "Shut off")
 
         # Check both changes have been applied
-        b.wait_not_in_text("#vm-subVmTest1-boot-order", bootOrder)
+        b.wait_in_text("#vm-subVmTest1-cpu-model", "host passthrough")
         b.wait_in_text("#vm-subVmTest1-vcpus-count", "3")
 
     def testNetworkSettings(self):
@@ -3292,7 +3287,7 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
         b.click("#vm-subVmTest1-network-1-edit-dialog")
 
         # Change network model type of a running domain
-        b.select_from_dropdown("#vm-subVmTest1-network-1-select-model", "e1000e", substring=True)
+        b.select_from_dropdown("#vm-subVmTest1-network-1-select-model", "e1000e")
         # Wait for the footer warning to appear
         b.wait_visible("#vm-subVmTest1-network-1-edit-dialog-idle-message")
         # Change network type and source of a running domain
@@ -3342,8 +3337,8 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
         # Open the modal dialog
         b.click("#vm-subVmTest1-network-1-edit-dialog")
 
-        b.wait_in_text("#vm-subVmTest1-network-1-select-type", "Bridge to LAN")
-        b.select_from_dropdown("#vm-subVmTest1-network-1-select-type", "Direct attachment")
+        b.wait_val("#vm-subVmTest1-network-1-select-type", "bridge")
+        b.select_from_dropdown("#vm-subVmTest1-network-1-select-type", "direct")
         source = b.val("#vm-subVmTest1-network-1-select-source")
 
         # Save the network settings
@@ -3357,8 +3352,8 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
         # Open the modal dialog
         b.click("#vm-subVmTest1-network-1-edit-dialog")
 
-        b.wait_in_text("#vm-subVmTest1-network-1-select-type", "Direct attachment")
-        b.select_from_dropdown("#vm-subVmTest1-network-1-select-type", "Bridge to LAN")
+        b.wait_val("#vm-subVmTest1-network-1-select-type", "direct")
+        b.select_from_dropdown("#vm-subVmTest1-network-1-select-type", "bridge")
         b.select_from_dropdown("#vm-subVmTest1-network-1-select-source", "virbr0")
 
         # Save the network settings
@@ -3378,8 +3373,8 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
         # Open the modal dialog
         b.click("#vm-subVmTest1-network-1-edit-dialog")
 
-        b.wait_in_text("#vm-subVmTest1-network-1-select-type", "Direct attachment")
-        b.select_from_dropdown("#vm-subVmTest1-network-1-select-type", "Virtual network")
+        b.wait_val("#vm-subVmTest1-network-1-select-type", "bridge")
+        b.select_from_dropdown("#vm-subVmTest1-network-1-select-type", "network")
         b.select_from_dropdown("#vm-subVmTest1-network-1-select-source", "test_network")
 
         # Save the network settings
@@ -3419,8 +3414,8 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
         b.click("#vm-subVmTest1-network-1-edit-dialog")
 
         # And ensure that the network sources dropdown is disabled
-        b.wait_in_text("#vm-subVmTest1-network-1-select-type", "Bridge to LAN")
-        b.select_from_dropdown("#vm-subVmTest1-network-1-select-type", "Virtual network")
+        b.wait_val("#vm-subVmTest1-network-1-select-type", "bridge")
+        b.select_from_dropdown("#vm-subVmTest1-network-1-select-type", "network")
         b.wait_visible("#vm-subVmTest1-network-1-edit-dialog-save:disabled")
         b.click(".pf-c-modal-box__footer button:contains(Cancel)")
 
@@ -3438,7 +3433,7 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
 
         # Try to edit the interface changing the source to a non deleted network
         b.click("#vm-subVmTest1-network-1-edit-dialog")
-        b.select_from_dropdown("#vm-subVmTest1-network-1-select-type", "Virtual network")
+        b.select_from_dropdown("#vm-subVmTest1-network-1-select-type", "network")
         b.select_from_dropdown("#vm-subVmTest1-network-1-select-source", "test_network")
         b.click("#vm-subVmTest1-network-1-edit-dialog-save")
         b.wait_in_text("#vm-subVmTest1-network-1-source", "test_network")
@@ -3619,107 +3614,6 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
         b.wait_visible('#delete-network-test_network4-{0}:disabled'.format(connectionName)) # Transient network cannot be deleted
         b.click('#deactivate-network-test_network4-{0}'.format(connectionName)) # Deactivate transient network
         self.waitNetworkRow("test_network4", connectionName, False) # Check it's not present after deactivation
-
-    def testSnapshotRevert(self):
-        b = self.browser
-        m = self.machine
-
-        self.createVm("subVmTest1")
-
-        # Check snapshot for running VM
-        m.execute("virsh detach-disk --domain subVmTest1 --target vda --config") # vda is raw disk, which are not supported by internal snapshots
-        m.execute("qemu-img create -f qcow2 /var/lib/libvirt/images/foobar.qcow2 1M")
-        m.execute("virsh attach-disk --domain subVmTest1 --source /var/lib/libvirt/images/foobar.qcow2 --target vdb --subdriver qcow2 --config")
-        m.execute("virsh snapshot-create-as --domain subVmTest1 --name snapshotA --description 'Description of snapshotA'")
-        time.sleep(1)
-        m.execute("virsh snapshot-create-as --domain subVmTest1 --name snapshotB --description 'Description of snapshotB'")
-        # snapshotB is the current snapshot
-        m.execute("virsh snapshot-current --domain subVmTest1 --snapshotname snapshotA")
-
-        self.login_and_go("/machines")
-        b.wait_in_text("body", "Virtual machines")
-        self.waitVmRow("subVmTest1")
-        self.goToVmPage("subVmTest1")
-        if m.image in distrosWithoutSnapshot:
-            b.wait_not_present("#vm-subVmTest1-snapshots")
-            return
-
-        b.wait_visible("#vm-subVmTest1-snapshot-1-current")
-        b.wait_not_present("#vm-subVmTest1-snapshot-0-current")
-        self.assertEqual("yes", m.execute("virsh snapshot-info --domain subVmTest1 --snapshotname snapshotA | grep 'Current:' | awk '{print $2}'").strip())
-        self.assertEqual("no", m.execute("virsh snapshot-info --domain subVmTest1 --snapshotname snapshotB | grep 'Current:' | awk '{print $2}'").strip())
-
-        b.click("#vm-subVmTest1-snapshot-0-revert")
-        b.wait_in_text(".pf-c-modal-box .pf-c-modal-box__header .pf-c-modal-box__title", "Revert to snapshot snapshotB")
-        b.click('.pf-c-modal-box__footer button:contains("Revert")')
-
-        b.wait_not_present("#vm-subVmTest1-snapshot-1-current")
-        b.wait_visible("#vm-subVmTest1-snapshot-0-current")
-        self.assertEqual("no", m.execute("virsh snapshot-info --domain subVmTest1 --snapshotname snapshotA | grep 'Current:' | awk '{print $2}'").strip())
-        self.assertEqual("yes", m.execute("virsh snapshot-info --domain subVmTest1 --snapshotname snapshotB | grep 'Current:' | awk '{print $2}'").strip())
-
-    def testSnapshots(self):
-        # Checks if difference of @time1 and @time2 is not greater than @difference (in seconds)
-        def checkTimeDiff(time1, time2, difference):
-            tmp = time2.split(' ') # split "Today 13:13:13" into day and time
-            if not tmp[1].startswith('00:') and not tmp[0] == "Today":
-                return False
-
-            diff = datetime.strptime(time1, '%H:%M:%S') - datetime.strptime(tmp[1] + tmp[2], '%I:%M%p')
-            return -difference < diff.total_seconds() < difference
-
-        b = self.browser
-        m = self.machine
-
-        self.createVm("subVmTest1")
-
-        self.login_and_go("/machines")
-        b.wait_in_text("body", "Virtual machines")
-        self.waitVmRow("subVmTest1")
-        b.wait_in_text("#vm-subVmTest1-state", "Running")
-
-        self.goToVmPage("subVmTest1")
-        if m.image in distrosWithoutSnapshot:
-            b.wait_not_present("#vm-subVmTest1-snapshots")
-            return
-
-        b.wait_in_text(".no-snapshots", "No snapshots")
-
-        # Check snapshot for running VM
-        m.execute("virsh detach-disk --domain subVmTest1 --target vda --persistent") # vda is raw disk, which are not supported by internal snapshots
-        m.execute("qemu-img create -f qcow2 /var/lib/libvirt/images/foobar.qcow2 1M")
-        m.execute("virsh attach-disk --domain subVmTest1 --source /var/lib/libvirt/images/foobar.qcow2 --target vdb --persistent")
-        time1 = datetime.now().strftime("%H:%M:%S")
-        m.execute("virsh snapshot-create-as --domain subVmTest1 --name snapshotB --description 'Description of snapshotB' --disk-only")
-
-        b.reload() # snapshots events not available yet: https://gitlab.com/libvirt/libvirt/-/issues/44
-        b.enter_page('/machines')
-        b.wait_in_text("#vm-subVmTest1-state", "Running")
-
-        b.wait_in_text("#vm-subVmTest1-snapshot-0-name", "snapshotB")
-        b.wait_in_text("#vm-subVmTest1-snapshot-0-description", "Description of snapshotB")
-        b.wait_in_text("#vm-subVmTest1-snapshot-0-type", "no state saved")
-        b.wait_in_text("#vm-subVmTest1-snapshot-0-parent", "No parent")
-        time2 = b.text("#vm-subVmTest1-snapshot-0-date")
-        self.assertTrue(checkTimeDiff(time1, time2, 60))
-
-        # Check snapshot for shutoff VM
-        b.click("#vm-subVmTest1-action-kebab button")
-        b.click("#vm-subVmTest1-forceOff")
-        b.wait_in_text("#vm-subVmTest1-state", "Shut off")
-
-        time1 = datetime.now().strftime("%H:%M:%S")
-        m.execute("virsh snapshot-create-as --domain subVmTest1 --name snapshotC --description 'Description of snapshotC'")
-
-        b.reload() # snapshots events not available yet: https://gitlab.com/libvirt/libvirt/-/issues/44
-        b.enter_page('/machines')
-
-        b.wait_in_text("#vm-subVmTest1-snapshot-0-name", "snapshotC")
-        b.wait_in_text("#vm-subVmTest1-snapshot-0-description", "Description of snapshotC")
-        b.wait_in_text("#vm-subVmTest1-snapshot-0-type", "shut off")
-        b.wait_in_text("#vm-subVmTest1-snapshot-0-parent", "snapshotB")
-        time2 = b.text("#vm-subVmTest1-snapshot-0-date")
-        self.assertTrue(checkTimeDiff(time1, time2, 60))
 
     def testStoragePools(self):
         b = self.browser
@@ -4766,7 +4660,7 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
         class NICAddDialog(object):
             def __init__(
                 # We have always have to specify mac and source_type to identify the device in xml and $virsh detach-interface
-                self, test_obj, source_type="Direct attachment", source=None, model=None, nic_num=2,
+                self, test_obj, source_type="direct", source=None, model=None, nic_num=2,
                 permanent=False, mac="52:54:00:a5:f8:c0", remove=True, persistent_vm=True
             ):
                 self.test_obj = test_obj
@@ -4797,7 +4691,7 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
                 if self.source:
                     b.select_from_dropdown("#vm-subVmTest1-add-iface-select-source", self.source)
                 if self.model:
-                    b.select_from_dropdown("#vm-subVmTest1-add-iface-select-model", self.model, substring=True)
+                    b.select_from_dropdown("#vm-subVmTest1-add-iface-select-model", self.model)
 
                 if self.mac:
                     b.click("#vm-subVmTest1-add-iface-set-mac")
@@ -4851,12 +4745,7 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
 
             def cleanup(self):
                 if self.permanent:
-                    source_type = "direct"
-                    if (self.source_type == "Virtual network"):
-                        source_type = "network"
-                    if (self.source_type == "Bridge to LAN"):
-                        source_type = "bridge"
-                    m.execute("virsh detach-interface --mac {0} --domain subVmTest1 --type {1} --config".format(self.mac, source_type))
+                    m.execute("virsh detach-interface --mac {0} --domain subVmTest1 --type {1} --config".format(self.mac, self.source_type))
 
                     # we don't get any signal for interface detaching right now
                     b.reload()
@@ -4881,20 +4770,20 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
 
         NICAddDialog(
             self,
-            source_type="Virtual network",
+            source_type="network",
             source="test_network",
         ).execute()
 
         # Test Direct attachment
         NICAddDialog(
             self,
-            source_type="Direct attachment",
+            source_type="direct",
         ).execute()
 
         # Test Bridge
         NICAddDialog(
             self,
-            source_type="Bridge to LAN",
+            source_type="bridge",
             source="virbr0",
         ).execute()
 
@@ -4913,22 +4802,28 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
         # Test permanent attachment to running VM
         NICAddDialog(
             self,
-            source_type="Virtual network",
+            source_type="network",
             source="test_network",
             permanent=True,
         ).execute()
 
         # Test NIC attaching to non-persistent VM
+        self.goToMainPage()
         m.execute("virsh dumpxml --inactive subVmTest1 > /tmp/subVmTest1.xml; virsh undefine subVmTest1")
+        b.wait_visible("tr[data-row-id=vm-subVmTest1-system][data-row-transient=true]")
+        self.goToVmPage("subVmTest1")
         NICAddDialog(
             self,
-            source_type="Virtual network",
+            source_type="network",
             source="test_network",
             mac="52:54:00:a5:f8:c1",
             nic_num=3,
             persistent_vm=False,
         ).execute()
+        self.goToMainPage()
         m.execute("virsh define /tmp/subVmTest1.xml")
+        b.wait_visible("tr[data-row-id=vm-subVmTest1-system][data-row-transient=false]")
+        self.goToVmPage("subVmTest1")
         time.sleep(1)
 
         b.click("#vm-subVmTest1-action-kebab button")
@@ -4954,124 +4849,6 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
         b.wait_not_present("#vm-subVmTest1-network-3-mac")
         b.wait_not_present(".pf-c-modal-box")
 
-    def testSnapshotCreate(self):
-        b = self.browser
-        m = self.machine
-
-        self.createVm("subVmTest1")
-
-        self.login_and_go("/machines")
-        b.wait_in_text("body", "Virtual machines")
-
-        if m.image in distrosWithoutSnapshot:
-            b.wait_not_present("#vm-subVmTest1-snapshots")
-            return
-        self.goToVmPage("subVmTest1")
-        b.wait_visible("#vm-subVmTest1-snapshots")
-
-        # Shut off domain
-        b.click("#vm-subVmTest1-action-kebab button")
-        b.click("#vm-subVmTest1-forceOff")
-        b.wait_in_text("#vm-subVmTest1-state", "Shut off")
-
-        class SnapshotCreateDialog(object):
-            def __init__(
-                self, test_obj, name=None, description=None, state="shutoff", snap_num=0, remove=True
-            ):
-                self.test_obj = test_obj
-                self.name = name
-                self.description = description
-                self.state = state
-                self.snap_num = snap_num
-                self.remove = remove
-
-            def execute(self):
-                self.open()
-                self.fill()
-                self.create()
-                self.verify_frontend()
-                self.verify_backend()
-                if self.remove:
-                    self.cleanup()
-
-            def open(self):
-                b.click("#vm-subVmTest1-add-snapshot-button")
-                b.wait_in_text(".pf-c-modal-box .pf-c-modal-box__header .pf-c-modal-box__title", "Create snapshot")
-
-            def fill(self):
-                if self.name:
-                    b.set_input_text("#name", self.name)
-                if self.description:
-                    b.set_input_text("#description", self.description)
-
-            def cancel(self):
-                b.click(".pf-c-modal-box__footer button:contains(Cancel)")
-                b.wait_not_present("#vm-subVmTest1-create-snapshot-modal")
-
-            def create(self):
-                b.click(".pf-c-modal-box__footer button:contains(Create)")
-                b.wait_not_present("#vm-subVmTest1-create-snapshot-modal")
-
-            def verify_frontend(self):
-                if self.name:
-                    b.wait_in_text("#vm-subVmTest1-snapshot-{0}-name".format(self.snap_num), self.name)
-                else:
-                    self.name = b.text("#vm-subVmTest1-snapshot-{0}-name".format(self.snap_num))
-                if self.description:
-                    b.wait_in_text("#vm-subVmTest1-snapshot-{0}-description".format(self.snap_num), self.description)
-                else:
-                    b.wait_in_text("#vm-subVmTest1-snapshot-{0}-description".format(self.snap_num), "No description")
-                if self.state:
-                    if self.state == "shutoff":
-                        state = "shut off"
-                    else:
-                        state = self.state
-                    b.wait_in_text("#vm-subVmTest1-snapshot-{0}-type".format(self.snap_num), state)
-
-            def verify_backend(self):
-                # Verify libvirt XML
-                snap_xml = "virsh -c qemu:///system snapshot-dumpxml --domain {0} --snapshotname {1}".format("subVmTest1", self.name)
-                xmllint_element = "{0} | xmllint --xpath 'string(//domainsnapshot/{{prop}})' - 2>&1 || true".format(snap_xml)
-
-                if (self.name):
-                    self.test_obj.assertEqual(self.name, m.execute(xmllint_element.format(prop='name')).strip())
-                if (self.description):
-                    self.test_obj.assertEqual(self.description, m.execute(xmllint_element.format(prop='description')).strip())
-                if (self.state):
-                    self.test_obj.assertEqual(self.state, m.execute(xmllint_element.format(prop='state')).strip())
-
-            def cleanup(self):
-                b.click("#delete-vm-subVmTest1-snapshot-{0}".format(self.snap_num))
-                b.wait_in_text(".pf-c-modal-box .pf-c-modal-box__header .pf-c-modal-box__title", "Delete Snapshot {0}".format(self.name))
-                b.click('.pf-c-modal-box__footer button:contains("Delete")')
-                b.wait_not_present("#vm-subVmTest1-snapshot-{0}-name:contains({1})".format(self.snap_num, self.name))
-
-        # No Snapshots present
-        b.wait_visible("#vm-subVmTest1-add-snapshot-button")
-
-        # Test snapshot creation with pre-generated values
-        SnapshotCreateDialog(
-            self,
-        ).execute()
-
-        # Test snapshot creation with predefined values
-        SnapshotCreateDialog(
-            self,
-            name = "test_snap_1",
-            description = "Description of test_snap_1",
-            state = "shutoff",
-        ).execute()
-
-        b.click("#vm-subVmTest1-run")
-        b.wait_in_text("#vm-subVmTest1-state", "Running")
-
-        # Test snapshot creation on running VM
-        SnapshotCreateDialog(
-            self,
-            name = "test_snap_2",
-            description = "Description of test_snap_2",
-            state = "running",
-        ).execute()
 
 if __name__ == '__main__':
     test_main()
