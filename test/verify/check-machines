@@ -2115,20 +2115,6 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
                     self.assertIn(self.machine.execute("cat {0}".format(root_password_file)).rstrip(), self.root_password)
 
         def fill(self):
-            def getSourceTypeLabel(sourceType):
-                if sourceType == 'file':
-                    expected_source_type = 'Local install media'
-                elif sourceType == 'disk_image':
-                    expected_source_type = 'Existing Disk Image'
-                elif sourceType == 'pxe':
-                    expected_source_type = 'Network boot (PXE)'
-                elif sourceType == 'downloadOS':
-                    expected_source_type = 'Download an OS'
-                else:
-                    expected_source_type = 'URL'
-
-                return expected_source_type
-
             b = self.browser
             b.set_input_text("#vm-name", self.name)
 
