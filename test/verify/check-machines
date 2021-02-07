@@ -318,7 +318,7 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
         self.login_and_go("/machines", user=user, superuser=superuser)
 
         if expect_empty_list:
-            b.wait_in_text("#virtual-machines-listing thead tr td", "No VM is running")
+            b.wait_in_text("#virtual-machines-listing h5", "No VM is running")
             return
         b.wait_in_text("body", "Virtual machines")
         self.waitVmRow("subVmTest1")
@@ -559,7 +559,7 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
         m.execute("useradd nonadmin; echo nonadmin:foobar | chpasswd")
         self.login_and_go("/machines", user="nonadmin", superuser=False)
         b.wait_in_text("body", "Virtual machines")
-        b.wait_in_text("#virtual-machines-listing thead tr td", "No VM is running")
+        b.wait_in_text("#virtual-machines-listing h5", "No VM is running")
 
     def testDisks(self):
         b = self.browser
@@ -669,7 +669,7 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
                 else:
                     b.click("#vm-{0}-disks-adddisk-new-select-pool".format(self.vm_name))
                     # Our custom select does not respond on the click function
-                    b.wait_present(".pf-c-modal-box option[data-value={0}]:disabled".format(self.pool_name))
+                    b.wait_present(".pf-c-modal-box option[value={0}]:disabled".format(self.pool_name))
                     return self
 
                 # Insert name for the new volume
@@ -2138,7 +2138,7 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
             b.set_input_text("#vm-name", self.name)
 
             if self.sourceType != 'disk_image':
-                b.select_from_dropdown("#source-type", getSourceTypeLabel(self.sourceType))
+                b.select_from_dropdown("#source-type", self.sourceType)
             else:
                 b.wait_not_present("#source-type")
             if self.sourceType == 'file':
@@ -2566,7 +2566,7 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
 
         def checkEnvIsEmpty(self):
             b = self.browser
-            b.wait_in_text("#virtual-machines-listing thead tr td", "No VM is running")
+            b.wait_in_text("#virtual-machines-listing h5", "No VM is running")
             # wait for the vm and disks to be deleted
             self.machine.execute("until test -z $(virsh list --all --name); do sleep 1; done")
             self.machine.execute("until test -z $(ls /home/admin/.local/share/libvirt/images/ 2>/dev/null); do sleep 1; done")
