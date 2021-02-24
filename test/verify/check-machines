@@ -1684,7 +1684,6 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
 
         # Redefine the domain with the new XML
         xmlstr = ET.tostring(root, encoding='unicode', method='xml')
-
         self.machine.execute("echo \'{0}\' > /tmp/domain.xml && virsh define --file /tmp/domain.xml".format(xmlstr))
 
         self.machine.execute("virsh start pxe-guest")
@@ -4794,10 +4793,8 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
         ).execute()
 
         # Test NIC attaching to non-persistent VM
-        self.goToMainPage()
         m.execute("virsh dumpxml --inactive subVmTest1 > /tmp/subVmTest1.xml; virsh undefine subVmTest1")
-        b.wait_visible("tr[data-row-id=vm-subVmTest1-system][data-row-transient=true]")
-        self.goToVmPage("subVmTest1")
+        b.wait_visible("div[data-vm-transient=\"true\"]")
         NICAddDialog(
             self,
             source_type="network",
@@ -4806,10 +4803,8 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
             nic_num=3,
             persistent_vm=False,
         ).execute()
-        self.goToMainPage()
         m.execute("virsh define /tmp/subVmTest1.xml")
-        b.wait_visible("tr[data-row-id=vm-subVmTest1-system][data-row-transient=false]")
-        self.goToVmPage("subVmTest1")
+        b.wait_visible("div[data-vm-transient=\"false\"]")
         time.sleep(1)
 
         b.click("#vm-subVmTest1-action-kebab button")
