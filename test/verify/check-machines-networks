@@ -644,6 +644,10 @@ class TestMachinesNetworks(VirtualMachinesCase):
         m.execute("ip link add name br1 type bridge && virsh attach-interface --current subVmTest1 bridge br1")
         self.addCleanup(m.execute, "ip link delete br1")
 
+        # wait for source type change to bridge, or clicking directly will cause the type is still network and the case fail,
+        # add wait_case("#vm-subVmTest1-network-1-type", "bridge") directly will also cause failed in wait_js_cond(),
+        # so sleep here
+        import time;time.sleep(1)
         # Open the modal dialog
         b.click("#vm-subVmTest1-network-1-edit-dialog")
 
