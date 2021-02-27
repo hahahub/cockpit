@@ -144,8 +144,10 @@ class TestMachinesStoragePools(VirtualMachinesCase):
         # Try deactivating and activating a pool
         b.click("#deactivate-pool-myPoolOne-{0}".format(connectionName))
         b.wait_in_text("#pool-myPoolOne-{0}-state".format(connectionName), "inactive")
-        b.wait_in_text("tr[data-row-id=pool-myPoolOne-{0}] + tr table td".format(connectionName), "Activate the storage pool to administer volumes")
-        b.wait_visible('#myPoolOne-{0}-create-volume-button:disabled'.format(connectionName))
+        # Modify here since 238-1 didn't contain the modify which is showing "Activate the storage pool to administer volumes", it is in 238.1-1, so modify here
+        b.wait_in_text("tr[data-row-id=pool-myPoolOne-{0}] + tr table td".format(connectionName), "No storage volumes defined for this storage pool")
+        # The same reason with previous line
+        # b.wait_visible('#myPoolOne-{0}-create-volume-button:disabled'.format(connectionName))
         b.click("#activate-pool-myPoolOne-{0}".format(connectionName))
         b.wait_in_text("#pool-myPoolOne-{0}-state".format(connectionName), "active")
         b.wait_visible('#myPoolOne-{0}-create-volume-button:enabled'.format(connectionName))
