@@ -490,6 +490,7 @@ class TestMachinesNetworks(VirtualMachinesCase):
         # Create dummy network
         m.execute("echo \"{0}\" > /tmp/xml && virsh net-define /tmp/xml && virsh net-start test_network".format(TEST_NETWORK_XML))
 
+        import time;time.sleep(1)
         # Create a second bridge to LAN NIC, virbr0 does not make sense but let's use it for test purposes
         m.execute("virsh attach-interface --persistent subVmTest1 bridge virbr0")
 
@@ -640,6 +641,7 @@ class TestMachinesNetworks(VirtualMachinesCase):
         # Start the VM in order that the UI picks up the new interface, since we don't get events of shut off domains
         m.execute("virsh start subVmTest1")
 
+        time.sleep(1)
         # Create a second bridge to LAN NIC
         m.execute("ip link add name br1 type bridge && virsh attach-interface --current subVmTest1 bridge br1")
         self.addCleanup(m.execute, "ip link delete br1")

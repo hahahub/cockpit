@@ -796,6 +796,8 @@ class TestMachinesDisks(VirtualMachinesCase):
 
         args = self.createVm("subVmTest1")
 
+        # need sleep 1s here, or attach-disk will be timeout
+        import time;time.sleep(1)
         m.execute("virsh attach-disk --domain subVmTest1 --source {0}/mydiskofpoolone_1 --target vdc --targetbus virtio".format(p1))
         m.execute("virsh attach-disk --domain subVmTest1 --source {0}/mydiskofpoolone_2 --target vdd --targetbus virtio --persistent".format(p1))
         m.execute("virsh attach-disk --domain subVmTest1 --source {0}/mydiskofpoolone_3 --target vde --targetbus virtio --persistent".format(p1))
