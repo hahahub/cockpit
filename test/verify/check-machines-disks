@@ -623,6 +623,8 @@ class TestMachinesDisks(VirtualMachinesCase):
             b.wait_in_text("#vm-subVmTest1-state", "Running")
             # Test disk attachment to non-persistent VM
             m.execute("virsh undefine subVmTest1")
+            # Need a sleep here, or the operation will cause a timeout
+            import time;time.sleep(1)
             self.VMAddDiskDialog(
                 self,
                 pool_name='myPoolOne',
