@@ -114,6 +114,13 @@ class TestMachinesNICs(VirtualMachinesCase):
         b.wait_in_text("#vm-subVmTest1-state", "Running")
         wait(lambda: "Linux version" in self.machine.execute("cat {0}".format(args["logfile"])), delay=3)
 
+        # Test detach a non-permanet nics when VM is running
+        self.NICAddDialog(
+            self,
+            source_type="network",
+            source="default"
+        ).execute()
+
         # Test permanent attachment to running VM
         self.NICAddDialog(
             self,
