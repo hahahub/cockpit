@@ -4323,11 +4323,14 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
                     b.wait_in_text("#pool-{0}-{1}-source-path".format(self.name, connectionName), self.source["source_path"])
 
                 # Check on the volume tab of the storage pool
+                b.click("#activate-pool-{}-{}".format(self.name, connectionName))                
                 b.click("#pool-{}-{}-storage-volumes".format(self.name, connectionName))
                 if "iscsi" in self.pool_type:
                     b.wait_visible('#{}-{}-create-volume-button:disabled'.format(self.name, connectionName))
                 else:
                     b.wait_visible('#{}-{}-create-volume-button:enabled'.format(self.name, connectionName))
+                b.click("#deactivate-pool-{}-{}".format(self.name, connectionName))
+                b.wait_in_text("#pool-{}-{}-state".format(self.name, connectionName), "inactive")
 
             def cleanup(self):
                 m.execute("virsh pool-undefine {0}".format(self.name))
