@@ -3720,12 +3720,18 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
 
         # Test operations on storage pools
         self.togglePoolRow("myPoolOne", connectionName)
+        selector = "#pool-{0}-{1}-storage-volumes".format("myPoolOne", connectionName)
+        self.browser.click(selector)
+        self.browser.wait_attr(selector, "class", "pf-c-nav__link pf-m-current")
 
         # Try deactivating and activating a pool
         b.click("#deactivate-pool-myPoolOne-{0}".format(connectionName))
         b.wait_in_text("#pool-myPoolOne-{0}-state".format(connectionName), "inactive")
+        b.wait_in_text("tr[data-row-id=pool-myPoolOne-{0}] + tr table td".format(connectionName), "Activate the storage pool to administer volumes")
+        b.wait_visible('#myPoolOne-{0}-create-volume-button:disabled'.format(connectionName))
         b.click("#activate-pool-myPoolOne-{0}".format(connectionName))
         b.wait_in_text("#pool-myPoolOne-{0}-state".format(connectionName), "active")
+        b.wait_visible('#myPoolOne-{0}-create-volume-button:enabled'.format(connectionName))
 
         # See deletion of Pool is disabled because this pool is referenced by VM's disk
         b.wait_visible("#delete-pool-myPoolTwo-{0}:disabled".format(connectionName))
@@ -4616,7 +4622,7 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
             self,
             pool_name="disk-pool",
             pool_type="disk",
-            vol_name="sdb1", # Partition names must follow pattern of sda1, sda2...
+            vol_name=dev.split("/")[-1] + "1", # Partition names must follow pattern of sda1, sda2...
             size="10", # Only 50MiB available on disk-pool
             unit="MiB",
             format="none",
