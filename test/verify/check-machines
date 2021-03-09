@@ -1414,13 +1414,14 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
 
         self.goToVmPage(name)
         b.wait_in_text("#vm-{0}-state".format(name), "Running") # running or paused
+        time.sleep(30)
 
         b.click("#pf-c-console__type-selector")
         b.wait_visible("#pf-c-console__type-selector + .pf-c-select__menu")
         b.click("#SerialConsole button")
         b.wait_not_present("#pf-c-console__type-selector + .pf-c-select__menu")
 
-        b.wait_in_text("#{0}-terminal .xterm-accessibility-tree > div:last-child".format(name), "cirros login")
+        b.wait_in_text("#{0}-terminal .xterm-accessibility-tree > div:nth-child(1)".format(name), "Connected to domain")
         b.click("#{0}-serialconsole-disconnect".format(name))
         b.wait_text("#{0}-terminal".format(name), "Disconnected from serial console. Click the connect button.")
 
@@ -3701,7 +3702,9 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
         b.wait_visible("#pool-myPoolTwo-{0}-volume-VolumeThree-name".format(connectionName))
         b.reload()
         b.enter_page('/machines')
+        time.sleep(2)
         self.togglePoolRow("myPoolTwo", connectionName)
+        time.sleep(2)
         b.click("#pool-myPoolTwo-{0}-storage-volumes".format(connectionName)) # open the "Storage volumes" subtab
         b.wait_not_present("#pool-myPoolTwo-{0}-volume-VolumeThree-name".format(connectionName))
 
@@ -3796,6 +3799,7 @@ class TestMachines(MachineCase, StorageHelpers, NetworkHelpers):
         # Expand row for myPoolTwo and check list of storage volumes
         self.togglePoolRow("myPoolTwo", connectionName)
         b.wait_visible("#pool-myPoolTwo-{0}-storage-volumes".format(connectionName))
+        time.sleep(2)
         b.click("#pool-myPoolTwo-{0}-storage-volumes".format(connectionName)) # open the "Storage volumes" subtab
 
         b.wait_visible("#pool-myPoolTwo-{0}-volume-VolumeOne-usedby".format(connectionName))
